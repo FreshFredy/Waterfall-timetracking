@@ -3,6 +3,8 @@ package main.java.de.hsesslingen.timetracking.model;
 import jakarta.persistence.*;
 import java.math.BigDecimal; 
 
+enum status{DRAFT, SUBMITTED, APPROVED, REJECTED};
+
 @Entity
 @Table(name = "Timesheet")
 public class Timesheet {
@@ -12,13 +14,13 @@ public class Timesheet {
     private long id;
 
     @Column(name = "month")
-    private int month; 
+    private Integer month; 
 
     @Column(name = "year")
-    private int year;
+    private Integer year;
 
     @Column(name = "status")
-    private enum status{DRAFT, SUBMITTED, APPROVED, REJECTED};
+    private status status;
 
     @Column(name = "rejection_reason")
     private String rejection_reason;
@@ -26,77 +28,59 @@ public class Timesheet {
     @Column(name = "employeeID")
     private long employeeID;
 
-    @Column(name = "timeEntries")
-    private List<timeEntries> timeEntries;
 
-    public Employee() {
+    public Timesheet() {
 
     }
 
-    public Employee(int month, int year, String email, Integer targetH, String role, long supervisorID) {
-        this.firstname = firstname;
-        this.lastname = lastname;
-        this.email = email;
-        this.targetH = targetH;
-        this.role = role;
-        this.supervisorID = supervisorID;
+    public Timesheet(Integer month, Integer year, status status, String rejection_reason, long employeeID) {
+        this.month = month;
+        this.year = year;
+        this.status = status;
+        this.rejection_reason = rejection_reason;
+        this.employeeID = employeeID;
     }
 
     public long getId() {
         return id;
     }
 
-    public String getfirstname() {
-        return firstname;
+    public Integer getMonth() {
+        return month;
     }
 
-    public void setfirstname(String firstname) {
-        this.firstname = firstname;
+    public void setMonth(int month) {
+        this.month = month;
     }
 
-    public String getlastname() {
-        return lastname;
+    public Integer getYear() {
+        return year;
     }
 
-    public void setlastname(String lastname) {
-        this.lastname = lastname;
+    public void setYear(int year) {
+        this.year = year;
     }
 
-    public String getemail() {
-        return email;
+    public status getStatus() {
+        return this.status;
     }
 
-    public void setemail(String email) {
-        this.email = email;
+    public void setStatus(status status) {
+        this.status = status;
     }
   
-    public Integer getTargetH() {
-        return targetH;
+    public long getEmployeeID() {
+        return employeeID;
     }
 
-    public void setTargetH(Integer targetH) {
-        this.targetH = targetH;
+    public void setEmployeeID(long employeeID) {
+        this.employeeID = employeeID;
     }
 
-    public String getRole() {
-        return role;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
-    }
-
-    public long getSupervisorId() {
-        return supervisorID;
-    }
-
-    public void setSupervisorId(long supervisorID) {
-        this.supervisorID = supervisorID;
-    }
 
     @Override
     public String toString() {
-        return "[id=" + id + ", firstname=" + firstname + ", lastname=" + lastname + ", email=" + email + ", Target Hours=" + targetH + ", role=" + role + ", supervisorID=" + supervisorID + "]";
+        return "[id=" + id + ", year=" + year + ", month=" + month + ", status=" + status + ", employeeID=" + employeeID + "]";
     }
 
 }

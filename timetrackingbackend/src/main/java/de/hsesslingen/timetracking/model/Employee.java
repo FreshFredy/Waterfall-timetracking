@@ -26,20 +26,22 @@ public class Employee {
     @Column(name = "role")
     private String role;
 
-    @Column(name = "supervisorID")
-    private long supervisorID;
+    //should be other table
+    @JoinColumn(name = "departmentID", nullable = false)
+    @Column(name = "departmentID")
+    private long departmentID;
 
     public Employee() {
 
     }
 
-    public Employee(String firstname, String lastname, String email, Integer targetH, String role, long supervisorID) {
+    public Employee(String firstname, String lastname, String email, Integer targetH, String role, long departmentID) {
         this.firstname = firstname;
         this.lastname = lastname;
         this.email = email;
         this.targetH = targetH;
         this.role = role;
-        this.supervisorID = supervisorID;
+        this.departmentID = departmentID;
     }
 
     public long getId() {
@@ -86,17 +88,17 @@ public class Employee {
         this.role = role;
     }
 
-    public long getSupervisorId() {
-        return supervisorID;
+    public long getDepartmentID() {
+        return departmentID;
     }
 
-    public void setSupervisorId(long supervisorID) {
-        this.supervisorID = supervisorID;
+    public void setDepartmentID(long departmentID) {
+        this.departmentID = departmentID;
     }
 
     @Override
     public String toString() {
-        return "[id=" + id + ", firstname=" + firstname + ", lastname=" + lastname + ", email=" + email + ", Target Hours=" + targetH + ", role=" + role + ", supervisorID=" + supervisorID + "]";
+        return "[id=" + id + ", firstname=" + firstname + ", lastname=" + lastname + ", email=" + email + ", Target Hours=" + targetH + ", role=" + role + ", departmentID=" + departmentID + "]";
     }
 
 }
