@@ -1,4 +1,4 @@
-package main.java.de.hsesslingen.timetracking.model;
+package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal; 
@@ -27,21 +27,21 @@ public class Employee {
     private String role;
 
     //should be other table
-    @JoinColumn(name = "departmentID", nullable = false)
-    @Column(name = "departmentID")
-    private long departmentID;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "department_id", nullable = false)
+    private Department department;
 
     public Employee() {
 
     }
 
-    public Employee(String firstname, String lastname, String email, Integer targetH, String role, long departmentID) {
+    public Employee(String firstname, String lastname, String email, Integer targetH, String role, Department department) {
         this.firstname = firstname;
         this.lastname = lastname;
         this.email = email;
         this.targetH = targetH;
         this.role = role;
-        this.departmentID = departmentID;
+        this.department = department;
     }
 
     public long getId() {
@@ -88,17 +88,17 @@ public class Employee {
         this.role = role;
     }
 
-    public long getDepartmentID() {
-        return departmentID;
+    public Department  getDepartmentID() {
+        return department;
     }
 
-    public void setDepartmentID(long departmentID) {
-        this.departmentID = departmentID;
+    public void setDepartmentID(Department department) {
+        this.department = department;
     }
 
     @Override
     public String toString() {
-        return "[id=" + id + ", firstname=" + firstname + ", lastname=" + lastname + ", email=" + email + ", Target Hours=" + targetH + ", role=" + role + ", departmentID=" + departmentID + "]";
+        return "[id=" + id + ", firstname=" + firstname + ", lastname=" + lastname + ", email=" + email + ", Target Hours=" + targetH + ", role=" + role + ", department=" + department + "]";
     }
 
 }
