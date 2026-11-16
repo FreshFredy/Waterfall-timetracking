@@ -16,7 +16,15 @@ public class VacationBalanceMapper {
             vb.getPlannedDays(),
             vb.getTakenDays(),
             vb.getRemainingDaysLastYear(),
-            vb.getRemainingDays()      
+            vb.getRemainingDays()
         );
+    }
+    public void updateEntityFromDTO(VacationBalanceDTO dto, VacationBalance vb) {
+        if (dto.annualDays() != null) {
+            vb.setAnnualDays(dto.annualDays());
+        }
+        vb.setRemainingDaysLastYear(dto.remainingDaysLastYear());
+        vb.setPlannedDays(dto.plannedDays());
+        vb.setTakenDays(dto.takenDays());
     }
 }

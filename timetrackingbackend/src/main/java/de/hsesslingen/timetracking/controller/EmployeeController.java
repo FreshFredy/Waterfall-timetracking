@@ -20,8 +20,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.hsesslingen.timetracking.dto.EmployeeRequestDTO;
 import de.hsesslingen.timetracking.dto.EmployeeResponseDTO;
+import de.hsesslingen.timetracking.dto.FlexAccountDTO;
 import de.hsesslingen.timetracking.dto.VacationBalanceDTO;
 import de.hsesslingen.timetracking.mapper.EmployeeMapper;
+import de.hsesslingen.timetracking.mapper.FlexAccountMapper;
 import de.hsesslingen.timetracking.mapper.VacationBalanceMapper;
 import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
@@ -38,6 +40,9 @@ public class EmployeeController {
 
 	@Autowired
 	private VacationBalanceMapper vacationBalanceMapper;
+
+	@Autowired
+	private FlexAccountMapper flexAccountMapper;
 
     @GetMapping("/Employees")
     public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees(@RequestParam(required = false) String email) {
@@ -71,7 +76,6 @@ public class EmployeeController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
-
 
 	@GetMapping("/Employees/{id}/vacation-balance")
 	public ResponseEntity<VacationBalanceDTO> getVacationBalance(@PathVariable("id") long id) {
@@ -112,15 +116,53 @@ public class EmployeeController {
         }
     }
 
-    @DeleteMapping("/Employees/{id}")
-    public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {
-        try {
-            employeeRepository.deleteById(id);
-            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-        } catch (Exception e) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-    }
+	@PutMapping("/Employees/{id}/vacation-balance")
+	public ResponseEntity<VacationBalanceDTO> updateVacationBalance(
+		@PathVariable("id") long id,
+		@RequestBody VacationBalanceDTO requestDTO) {
+
+		Optional<Employee> employeeData = employeeRepository.findById(id);
+		if (employeeData.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		Employee employee = employeeData.get();
+		vacationBalanceMapper.updateEntityFromDTO(requestDTO, employee.getVacationBalance());
+		employeeRepository.save(employee);   // cascade = ALL speichert die Balance mit
+
+		return new ResponseEntity<>(vacationBalanceMapper.toDto(employee.getVacationBalance()), HttpStatus.OK);
+		}
+	@PutMapping("/Employees/{id}/flex-account")
+	public ResponseEntity<FlexAccountDTO> updateFlexAccount(
+		@PathVariable("id") long id,
+		@RequestBody FlexAccountDTO requestDTO) {
+
+		Optional<Employee> employeeData = employeeRepository.findById(id);
+		if (employeeData.isEmpty()) {
+			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		Employee employee = employeeData.get();
+        flexAccountMapper.updateFlexFromDTO(requestDTO, employee.getFlexAccount());
+		employeeRepository.save(employee);   // cascade = ALL speichert die Balance mit
+
+		return new ResponseEntity<>(flexAccountMapper.toDto(employee.getFlexAccount()), HttpStatus.OK);
+	}
+
+
+
+
+
+		@DeleteMapping("/Employees/{id}")
+		public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {
+			try {
+				employeeRepository.deleteById(id);
+				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			} catch (Exception e) {
+				return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		}
+			
 
     @DeleteMapping("/Employees")
     public ResponseEntity<HttpStatus> deleteAllEmployees() {

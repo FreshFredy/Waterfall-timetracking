@@ -58,4 +58,8 @@ public Integer getSoft_limit_max(){
 public void setEmployee(Employee employee){
     this.employee = employee;
 }
+public boolean withinLimit(Integer change){
+    if((change + balance_hours) < soft_limit_max || (balance_hours + change) > soft_limit_min) return true;
+    else return false;
+}
 }
