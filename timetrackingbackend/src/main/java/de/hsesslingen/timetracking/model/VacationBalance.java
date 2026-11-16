@@ -23,13 +23,9 @@ public class VacationBalance {
     @Column(name = "remaining_days_last_year")
     private Integer remaining_days_last_year;
 
-
-
     @OneToOne
     @JoinColumn(name = "employee_id", referencedColumnName = "id", unique = true)
     private Employee employee;
-
-
 
     public VacationBalance(){}
     public VacationBalance(Integer annual_days, Employee employee){
@@ -39,6 +35,7 @@ public class VacationBalance {
         this.remaining_days_last_year = 0;
         this.employee = employee;
     }
+
     public long getID(){
         return id;
     }

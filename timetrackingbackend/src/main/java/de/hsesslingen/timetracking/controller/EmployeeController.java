@@ -79,9 +79,13 @@ public class EmployeeController {
 			_Employee.setfirstname(Employee.getfirstname());
 			_Employee.setlastname(Employee.getlastname());
 			_Employee.setemail(Employee.getemail());
+			_Employee.setUsername(Employee.getUsername());
+			_Employee.setPassword(Employee.getPassword());
 			_Employee.setTargetH(Employee.getTargetH());
-			_Employee.setRole(Employee.getRole());
-			_Employee.setDepartmentID(Employee.getDepartmentID());
+			_Employee.setSupervisor(Employee.getSupervisor());
+			_Employee.setFlexAccount(Employee.getFlexAccount());
+			_Employee.setVacationBalance(Employee.getVacationBalance());
+			_Employee.setFlexAccount(Employee.getVacationBalance());
 			return new ResponseEntity<>(EmployeeRepository.save(_Employee), HttpStatus.OK);
 		} else {
 			return new ResponseEntity<>(HttpStatus.NOT_FOUND);

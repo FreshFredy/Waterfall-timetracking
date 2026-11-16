@@ -2,7 +2,6 @@ package de.hsesslingen.timetracking.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.lang3.ObjectUtils.Null;
 
 import jakarta.persistence.*;
 
@@ -145,6 +144,8 @@ public class Employee {
     public VacationBalance getVacationBalance() {
         return vacationBalance;
     }
+
+
 
         public FlexAccount getFlexAccount() {
         return flexAccount;

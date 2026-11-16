@@ -55,4 +55,7 @@ public void setSoft_limit_max(Integer soft_limit_max){
 public Integer getSoft_limit_max(){
     return soft_limit_max;
 }
+public void setEmployee(Employee employee){
+    this.employee = employee;
+}
 }
