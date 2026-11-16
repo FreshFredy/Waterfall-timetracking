@@ -3,7 +3,7 @@ package de.hsesslingen.timetracking.model;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
-import java.util.Date;
+
 
 
 enum excused  {EXCUSED, DOCOTRS_NOTE_MISSING, NOT_EXCUSED};
