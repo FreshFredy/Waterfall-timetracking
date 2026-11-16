@@ -1,7 +1,10 @@
 package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDate;
 import java.util.Date;
+
 
 enum excused  {EXCUSED, DOCOTRS_NOTE_MISSING, NOT_EXCUSED};
 
@@ -14,19 +17,27 @@ public class SickLeave {
     private long id;
 
     @Column(name = "date")
-    private Date date; 
+    private LocalDate date; 
 
-    @Column(name = "doctors_bote")
+    @Column(name = "doctors_note")
     private String filepath_doctors_note;
 
-    @OneToOne
-    @JoinColumn(name = "employee_id", referencedColumnName = "id", unique = true)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "employee_id")
     private Employee employee;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "created_by_id")
+    private HR createdBy;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "time_entry_id", unique = true)
+    private Timeentry timeEntry;
 
     public SickLeave(){
 
     }
-    public SickLeave(Date date, String fileString, Employee employee){
+    public SickLeave(LocalDate date, String fileString, Employee employee){
         this.date = date;
         this.filepath_doctors_note = fileString;
         this.employee = employee;
@@ -35,10 +46,10 @@ public class SickLeave {
     public long getID(){
         return id;
     }
-    public void setDate(Date date){
+    public void setDate(LocalDate date){
         this.date = date;
     }
-    public Date getDate(){
+    public LocalDate getDate(){
         return date;
     }
     public void setFileDocNote(String filePath){
