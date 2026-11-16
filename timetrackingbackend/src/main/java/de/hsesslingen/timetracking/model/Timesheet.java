@@ -1,8 +1,10 @@
 package de.hsesslingen.timetracking.model;
 
+import java.util.ArrayList;
+
 import jakarta.persistence.*;
 
-enum status { DRAFT, SUBMITTED, APPROVED, REJECTED };
+
 
 @Entity
 @Table(name = "Timesheet")
@@ -19,19 +21,25 @@ public class Timesheet {
     private Integer year;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private status status;
+    private TimesheetStatus status;
 
     @Column(name = "rejection_reason")
     private String rejection_reason;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "employee_id")
-    private Employee employee; // Korrigiert von primitivem employeeID
+    private Employee employee; 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approver_id")
+    private Supervisor approver;   
+
+    @OneToMany(mappedBy = "timesheet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Timeentry> timeEntries = new ArrayList<>();
 
     public Timesheet() {}
 
-    public Timesheet(Integer month, Integer year, status status, String rejection_reason, Employee employee) {
+    public Timesheet(Integer month, Integer year, TimesheetStatus status, String rejection_reason, Employee employee) {
         this.month = month;
         this.year = year;
         this.status = status;
@@ -59,11 +67,11 @@ public class Timesheet {
         this.year = year;
     }
 
-    public status getStatus() {
+    public TimesheetStatus getStatus() {
         return this.status;
     }
 
-    public void setStatus(status status) {
+    public void setStatus(TimesheetStatus status) {
         this.status = status;
     }
 

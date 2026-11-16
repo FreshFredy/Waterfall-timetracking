@@ -85,6 +85,14 @@ public class EmployeeController {
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
+	@GetMapping("/Employees/{id}/flex-account")
+	public ResponseEntity<FlexAccountDTO> getFlexAccount(@PathVariable("id") long id) {
+		return employeeRepository.findById(id)
+				.map(Employee::getFlexAccount)
+				.map(flexAccountMapper::toDto)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
+	}
 
     @PostMapping("/Employees")
     public ResponseEntity<EmployeeResponseDTO> createEmployee(@RequestBody EmployeeRequestDTO requestDTO) {
@@ -132,6 +140,7 @@ public class EmployeeController {
 
 		return new ResponseEntity<>(vacationBalanceMapper.toDto(employee.getVacationBalance()), HttpStatus.OK);
 		}
+
 	@PutMapping("/Employees/{id}/flex-account")
 	public ResponseEntity<FlexAccountDTO> updateFlexAccount(
 		@PathVariable("id") long id,
@@ -147,11 +156,7 @@ public class EmployeeController {
 		employeeRepository.save(employee);   // cascade = ALL speichert die Balance mit
 
 		return new ResponseEntity<>(flexAccountMapper.toDto(employee.getFlexAccount()), HttpStatus.OK);
-	}
-
-
-
-
+        }
 
 		@DeleteMapping("/Employees/{id}")
 		public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {

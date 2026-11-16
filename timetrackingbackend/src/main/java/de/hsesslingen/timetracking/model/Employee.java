@@ -60,9 +60,8 @@ public class Employee {
         this.password = password;
         this.targetH = targetH;
         this.supervisor = supervisor;
-        setVacationBalance(new VacationBalance());
-        setFlexAccount(new FlexAccount());
-        //setTimesheet(new Timesheet());
+        setVacationBalance(new VacationBalance( 30, this));
+        setFlexAccount(new FlexAccount(100, -100, this));
     }
 
     //Synching both sides of relation
@@ -76,16 +75,16 @@ public class Employee {
         flexAccount.setEmployee(this);
     }
 
-    //public void setTimesheet(Timesheet timesheet) {
-    //    this.timesheet.add(timesheet);
-    //    timesheet.setEmployee(this);
-    //}
+    public void setTimesheet(Timesheet timesheet) {
+       this.timesheets.add(timesheet);
+        timesheet.setEmployee(this);
+    }
 
     public long getId() {
         return id;
     }
 
-    public String getfirstname() {
+    public String getFirstname() {
         return firstname;
     }
 
@@ -93,7 +92,7 @@ public class Employee {
         this.firstname = firstname;
     }
 
-    public String getlastname() {
+    public String getlastName() {
         return lastname;
     }
 
