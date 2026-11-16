@@ -1,7 +1,7 @@
 package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal; 
+
 
 @Entity
 @Table(name = "Employee")

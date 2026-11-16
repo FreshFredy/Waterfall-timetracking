@@ -1,10 +1,8 @@
 package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal; 
 
 import java.util.Date;
-import de.hsesslingen.timetracking.model.Employee;
 
 
 enum entryType {SICK, WORK, FLEXTIME}

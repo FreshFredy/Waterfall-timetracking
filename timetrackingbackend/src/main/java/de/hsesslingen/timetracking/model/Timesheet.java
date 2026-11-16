@@ -1,7 +1,6 @@
 package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
-import java.math.BigDecimal; 
 
 enum status{DRAFT, SUBMITTED, APPROVED, REJECTED};
 
