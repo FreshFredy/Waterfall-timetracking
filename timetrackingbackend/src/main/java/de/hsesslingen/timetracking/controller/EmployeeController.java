@@ -1,8 +1,9 @@
+   
 package de.hsesslingen.timetracking.controller;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -17,100 +18,102 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.hsesslingen.timetracking.dto.EmployeeRequestDTO;
+import de.hsesslingen.timetracking.dto.EmployeeResponseDTO;
+import de.hsesslingen.timetracking.mapper.EmployeeMapper;
 import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 
 @RestController
-@RequestMapping("/api-timetracking/Employee-management/")
+@RequestMapping("/api-timetracking/Employee-management") // Schrägstrich am Ende entfernt, um doppelte Slashes (//Employees) zu vermeiden
 public class EmployeeController {
 
-	@Autowired
-	EmployeeRepository EmployeeRepository;
+    @Autowired
+    private EmployeeRepository employeeRepository;
 
-	@GetMapping("/Employees")
-	public ResponseEntity<List<Employee>> getAllEmployees(@RequestParam(required = false) String email) {
-		
-		try {
-			List<Employee> Employees = new ArrayList<Employee>();
+    @Autowired
+    private EmployeeMapper employeeMapper;
 
-			if (email == null)
-				EmployeeRepository.findAll().forEach(Employees::add);
-			else
-				EmployeeRepository.findByemail(email).forEach(Employees::add);
+    @GetMapping("/Employees")
+    public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees(@RequestParam(required = false) String email) {
+        try {
+            List<Employee> employees = (email == null) 
+                    ? employeeRepository.findAll() 
+                    : employeeRepository.findByemail(email);
 
-			if (Employees.isEmpty()) {
-				return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-			}
+            if (employees.isEmpty()) {
+                return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+            }
 
-			return new ResponseEntity<>(Employees, HttpStatus.OK);
-		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+            // Entities in ResponseDTOs umwandeln
+            List<EmployeeResponseDTO> responseDTOs = employees.stream()
+                    .map(employeeMapper::toDTO)
+                    .collect(Collectors.toList());
 
-	@GetMapping("/Employees/{id}")
-	public ResponseEntity<Employee> getEmployeeById(@PathVariable("id") long id) {
-		Optional<Employee> EmployeeData = EmployeeRepository.findById(id);
+            return new ResponseEntity<>(responseDTOs, HttpStatus.OK);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-		if (EmployeeData.isPresent()) {
-			return new ResponseEntity<>(EmployeeData.get(), HttpStatus.OK);
-		} else {
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-		}
-	}
+    @GetMapping("/Employees/{id}")
+    public ResponseEntity<EmployeeResponseDTO> getEmployeeById(@PathVariable("id") long id) {
+        Optional<Employee> employeeData = employeeRepository.findById(id);
 
-	@PostMapping("/Employees")
-	public ResponseEntity<Employee> createEmployee(@RequestBody Employee Employee) {
-		try {
-			Employee _Employee = EmployeeRepository
-					.save(new Employee(Employee.getfirstname(), Employee.getlastname(), Employee.getemail(), Employee.getTargetH(), Employee.getRole(), Employee.getDepartmentID()));
-			return new ResponseEntity<>(_Employee, HttpStatus.CREATED);
-		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+        if (employeeData.isPresent()) {
+            return new ResponseEntity<>(employeeMapper.toDTO(employeeData.get()), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
-	@PutMapping("/Employees/{id}")
-	public ResponseEntity<Employee> updateEmployee(@PathVariable("id") long id, @RequestBody Employee Employee) {
-		Optional<Employee> EmployeeData = EmployeeRepository.findById(id);
+    @PostMapping("/Employees")
+    public ResponseEntity<EmployeeResponseDTO> createEmployee(@RequestBody EmployeeRequestDTO requestDTO) {
+        try {
+            // RequestDTO in Entity umwandeln und speichern
+            Employee newEmployee = employeeMapper.toEntity(requestDTO);
+            Employee savedEmployee = employeeRepository.save(newEmployee);
+            
+            // Gespeicherte Entity als ResponseDTO zurückgeben
+            return new ResponseEntity<>(employeeMapper.toDTO(savedEmployee), HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-		if (EmployeeData.isPresent()) {
-			Employee _Employee = EmployeeData.get();
-			_Employee.setfirstname(Employee.getfirstname());
-			_Employee.setlastname(Employee.getlastname());
-			_Employee.setemail(Employee.getemail());
-			_Employee.setUsername(Employee.getUsername());
-			_Employee.setPassword(Employee.getPassword());
-			_Employee.setTargetH(Employee.getTargetH());
-			_Employee.setSupervisor(Employee.getSupervisor());
-			_Employee.setFlexAccount(Employee.getFlexAccount());
-			_Employee.setVacationBalance(Employee.getVacationBalance());
-			_Employee.setFlexAccount(Employee.getVacationBalance());
-			return new ResponseEntity<>(EmployeeRepository.save(_Employee), HttpStatus.OK);
-		} else {
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-		}
-	}
+    @PutMapping("/Employees/{id}")
+    public ResponseEntity<EmployeeResponseDTO> updateEmployee(@PathVariable("id") long id, @RequestBody EmployeeRequestDTO requestDTO) {
+        Optional<Employee> employeeData = employeeRepository.findById(id);
 
-	@DeleteMapping("/Employees/{id}")
-	public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {
-		try {
-			EmployeeRepository.deleteById(id);
-			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+        if (employeeData.isPresent()) {
+            Employee existingEmployee = employeeData.get();
+            // Bestehende Entity über den Mapper aktualisieren
+            employeeMapper.updateEntityFromDTO(requestDTO, existingEmployee);
+            Employee updatedEmployee = employeeRepository.save(existingEmployee);
+            
+            return new ResponseEntity<>(employeeMapper.toDTO(updatedEmployee), HttpStatus.OK);
+        } else {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
 
-	@DeleteMapping("/Employees")
-	public ResponseEntity<HttpStatus> deleteAllEmployees() {
-		try {
-			EmployeeRepository.deleteAll();
-			return new ResponseEntity<>(HttpStatus.NO_CONTENT);
-		} catch (Exception e) {
-			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
-		}
+    @DeleteMapping("/Employees/{id}")
+    public ResponseEntity<HttpStatus> deleteEmployee(@PathVariable("id") long id) {
+        try {
+            employeeRepository.deleteById(id);
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 
-	}
-
+    @DeleteMapping("/Employees")
+    public ResponseEntity<HttpStatus> deleteAllEmployees() {
+        try {
+            employeeRepository.deleteAll();
+            return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
 }

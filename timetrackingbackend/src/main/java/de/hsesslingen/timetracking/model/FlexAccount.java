@@ -5,7 +5,7 @@ import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "VacationBalance")
+@Table(name = "FlexAccount")
 public class FlexAccount {
     
     @Id

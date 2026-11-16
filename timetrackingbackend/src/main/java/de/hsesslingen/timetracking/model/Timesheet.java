@@ -2,7 +2,7 @@ package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
 
-enum status{DRAFT, SUBMITTED, APPROVED, REJECTED};
+enum status { DRAFT, SUBMITTED, APPROVED, REJECTED };
 
 @Entity
 @Table(name = "Timesheet")
@@ -18,26 +18,25 @@ public class Timesheet {
     @Column(name = "year")
     private Integer year;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private status status;
 
     @Column(name = "rejection_reason")
     private String rejection_reason;
 
-    @Column(name = "employeeID")
-    private long employeeID;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "employee_id")
+    private Employee employee; // Korrigiert von primitivem employeeID
 
+    public Timesheet() {}
 
-    public Timesheet() {
-
-    }
-
-    public Timesheet(Integer month, Integer year, status status, String rejection_reason, long employeeID) {
+    public Timesheet(Integer month, Integer year, status status, String rejection_reason, Employee employee) {
         this.month = month;
         this.year = year;
         this.status = status;
         this.rejection_reason = rejection_reason;
-        this.employeeID = employeeID;
+        this.employee = employee;
     }
 
     public long getId() {
@@ -48,7 +47,7 @@ public class Timesheet {
         return month;
     }
 
-    public void setMonth(int month) {
+    public void setMonth(Integer month) {
         this.month = month;
     }
 
@@ -56,7 +55,7 @@ public class Timesheet {
         return year;
     }
 
-    public void setYear(int year) {
+    public void setYear(Integer year) {
         this.year = year;
     }
 
@@ -67,19 +66,25 @@ public class Timesheet {
     public void setStatus(status status) {
         this.status = status;
     }
+
+    public String getRejectionReason() {
+        return rejection_reason;
+    }
+
+    public void setRejectionReason(String rejection_reason) {
+        this.rejection_reason = rejection_reason;
+    }
   
-    public long getEmployeeID() {
-        return employeeID;
+    public Employee getEmployee() {
+        return employee;
     }
 
-    public void setEmployeeID(long employeeID) {
-        this.employeeID = employeeID;
+    public void setEmployee(Employee employee) {
+        this.employee = employee;
     }
-
 
     @Override
     public String toString() {
-        return "[id=" + id + ", year=" + year + ", month=" + month + ", status=" + status + ", employeeID=" + employeeID + "]";
+        return "[id=" + id + ", year=" + year + ", month=" + month + ", status=" + status + "]";
     }
-
 }
