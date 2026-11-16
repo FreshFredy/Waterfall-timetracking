@@ -6,7 +6,7 @@ public class EmployeeRequestDTO {
     private String email;
     private String username;
     private String password;
-    private double targetH;
+    private int targetH;
     private Long supervisor;
     private Long departmentID;
     private double flexAccount;
@@ -23,8 +23,8 @@ public class EmployeeRequestDTO {
     public void setUsername(String username) { this.username = username; }
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
-    public double getTargetH() { return targetH; }
-    public void setTargetH(double targetH) { this.targetH = targetH; }
+    public int getTargetH() { return targetH; }
+    public void setTargetH(int targetH) { this.targetH = targetH; }
     public Long getSupervisor() { return supervisor; }
     public void setSupervisor(Long supervisor) { this.supervisor = supervisor; }
     public Long getDepartmentID() { return departmentID; }

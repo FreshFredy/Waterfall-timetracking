@@ -6,7 +6,7 @@ public class EmployeeResponseDTO {
     private String lastname;
     private String email;
     private String username;
-    private double targetH;
+    private int targetH;
     private Long supervisor;
     private Long departmentID;
     private double flexAccount;
@@ -25,8 +25,8 @@ public class EmployeeResponseDTO {
     public void setEmail(String email) { this.email = email; }
     public String getUsername() { return username; }
     public void setUsername(String username) { this.username = username; }
-    public double getTargetH() { return targetH; }
-    public void setTargetH(double targetH) { this.targetH = targetH; }
+    public int getTargetH() { return targetH; }
+    public void setTargetH(int targetH) { this.targetH = targetH; }
     public Long getSupervisor() { return supervisor; }
     public void setSupervisor(Long supervisor) { this.supervisor = supervisor; }
     public Long getDepartmentID() { return departmentID; }
