@@ -1,5 +1,5 @@
 package de.hsesslingen.timetracking.model;
-
+import de.hsesslingen.timetracking.EntryTypes.*;
 import jakarta.persistence.*;
 
 import java.util.Date;

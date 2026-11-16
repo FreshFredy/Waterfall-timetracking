@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Duration;
+import de.hsesslingen.timetracking.EntryTypes.*;
 
 
 
