@@ -1,7 +1,7 @@
 package de.hsesslingen.timetracking.model;
 
 import java.util.ArrayList;
-
+import java.util.List;
 import jakarta.persistence.*;
 
 
@@ -45,6 +45,44 @@ public class Timesheet {
         this.status = status;
         this.rejection_reason = rejection_reason;
         this.employee = employee;
+    }
+
+        public void addEntry(Timeentry entry) {
+        if (status == TimesheetStatus.SUBMITTED || status == TimesheetStatus.APPROVED) {
+            throw new IllegalStateException("Timesheet kann nicht mehr bearbeitet werden");
+        }
+        timeEntries.add(entry);
+        entry.setTimesheet(this);
+    }
+
+    public float getWorkedHours() {
+        float sum = 0;
+        for (Timeentry e : timeEntries) {
+            sum += e.getCreditedHours();
+        }
+        return sum;
+    }
+
+    // Statuswechsel: reine Logik auf eigenen Daten, deshalb in der Entity
+    public void submit() {
+        if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
+            throw new IllegalStateException("Nur offene oder abgelehnte Timesheets können eingereicht werden");
+        }
+        status = TimesheetStatus.SUBMITTED;
+        rejection_reason = null;
+    }
+
+    public void approve(Supervisor supervisor) {
+        if (status != TimesheetStatus.SUBMITTED) throw new IllegalStateException("Nicht eingereicht");
+        status = TimesheetStatus.APPROVED;
+        approver = supervisor;
+    }
+
+    public void reject(Supervisor supervisor, String reason) {
+        if (status != TimesheetStatus.SUBMITTED) throw new IllegalStateException("Nicht eingereicht");
+        status = TimesheetStatus.REJECTED;
+        approver = supervisor;
+        rejection_reason = reason;
     }
 
     public long getId() {
