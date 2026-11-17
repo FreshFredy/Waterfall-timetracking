@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,6 +30,7 @@ import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api-timetracking/Employee-management") // Schrägstrich am Ende entfernt, um doppelte Slashes (//Employees) zu vermeiden
 public class EmployeeController {
 
