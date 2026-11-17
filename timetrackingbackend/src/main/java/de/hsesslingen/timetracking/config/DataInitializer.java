@@ -29,13 +29,13 @@ public class DataInitializer implements CommandLineRunner {
 
             
             Supervisor testSupervisor = new Supervisor(
-                "Anna", "Schmidt", "anna.s", "supervisor@company.com", "123456", 8, null
+                "Anna", "Schmidt", "anna.s", "supervisor@company.com", "123456", 8
             );
             employeeRepository.save(testSupervisor);
 
 
             HR testHr = new HR(
-                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8, null
+                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8
             );
             employeeRepository.save(testHr);
             
