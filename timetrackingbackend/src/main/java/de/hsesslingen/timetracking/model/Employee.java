@@ -18,6 +18,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
+import java.util.Comparator;
+import java.util.Optional;
 
 
 @Entity
@@ -164,6 +166,9 @@ public class Employee {
 
     public List<Timesheet> getTimesheets() {
         return timesheets;
+    }
+    public Optional<Timesheet> getTimesheet() {
+        return this.timesheets.stream().max(Comparator.comparing(Timesheet::getYear).thenComparing(Timesheet::getMonth));
     }
 
     @Override

@@ -22,17 +22,17 @@ public class DataInitializer implements CommandLineRunner {
         if (employeeRepository.count() == 0) {
             
 
-            Employee testEmployee = new Employee(
-                "Max", "Mustermann", "max.m", "employee@company.com", "123456", 8, null
-            );
-            employeeRepository.save(testEmployee);
 
-            
+
             Supervisor testSupervisor = new Supervisor(
                 "Anna", "Schmidt", "anna.s", "supervisor@company.com", "123456", 8
             );
             employeeRepository.save(testSupervisor);
 
+            Employee testEmployee = new Employee(
+                "Max", "Mustermann", "max.m", "employee@company.com", "123456", 8, testSupervisor
+            );
+            employeeRepository.save(testEmployee);
 
             HR testHr = new HR(
                 "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8
