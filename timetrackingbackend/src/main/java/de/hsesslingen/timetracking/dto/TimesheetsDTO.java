@@ -1,9 +1,7 @@
 package de.hsesslingen.timetracking.dto;
 
-import java.util.List;
 import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.model.Employee;
-import de.hsesslingen.timetracking.model.Supervisor;
 import de.hsesslingen.timetracking.model.Supervisor;
 
 public record TimesheetsDTO (
@@ -12,8 +10,8 @@ public record TimesheetsDTO (
     TimesheetStatus status,
     String rejectionReason,
     Employee employee_id,
-    Supervisor approver,
-    List<Timeentry> timeEntries
+    Supervisor approver
+    //List<Timeentry> timeEntries
 
 )
 {

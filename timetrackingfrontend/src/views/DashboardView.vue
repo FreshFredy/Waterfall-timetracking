@@ -83,19 +83,7 @@ const fetchDashboardData = async () => {
 onMounted(() => {
     fetchDashboardData()
 })
-const weeklyData = ref([
-  { label: '01.–04. Sep', total: '32:30', workHeight: 91, sickHeight: 0 },
-  { label: '07.–11. Sep', total: '40:45', workHeight: 69.3, sickHeight: 44.8 },
-  { label: '14.–18. Sep', total: '41:00', workHeight: 114.8, sickHeight: 0 },
-  { label: '21.–25. Sep', total: '41:00', workHeight: 114.8, sickHeight: 0 },
-  { label: '28.–30. Sep', total: '25:15', workHeight: 70.7, sickHeight: 0 },
-])
 
-const recentEntries = ref([
-  { date: 'Wed, 30.09.2026', range: '08:00 – 17:00', break: '0:30 h', net: '8:30 h' },
-  { date: 'Tue, 29.09.2026', range: '08:00 – 16:45', break: '0:30 h', net: '8:15 h' },
-  { date: 'Mon, 28.09.2026', range: '08:00 – 17:00', break: '0:30 h', net: '8:30 h' },
-])
 </script>
 
 <template>
@@ -145,33 +133,6 @@ const recentEntries = ref([
         </div>
         <div class="divider-line"></div>
         <button @click="emit('navigate', 'time-tracking')" class="view-timesheet-link">Zum Timesheet →</button>
-      </div>
-    </div>
-
-    <div class="bottom-row">
-      <div class="entries-box">
-        <div class="entries-header">
-          <h2 class="box-title">Recent entries</h2>
-          <button @click="emit('navigate', 'time-tracking')" class="all-entries-btn">All entries →</button>
-        </div>
-        <table class="entries-table">
-          <thead>
-            <tr>
-              <th class="th-date">DATE</th>
-              <th class="th-range">TIME RANGE</th>
-              <th class="th-break">BREAK</th>
-              <th class="th-net">NET</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-for="entry in recentEntries" :key="entry.date" class="tr-row">
-              <td class="td-date">{{ entry.date }}</td>
-              <td class="td-range">{{ entry.range }}</td>
-              <td class="td-break">{{ entry.break }}</td>
-              <td class="td-net">{{ entry.net }}</td>
-            </tr>
-          </tbody>
-        </table>
       </div>
     </div>
   </div>

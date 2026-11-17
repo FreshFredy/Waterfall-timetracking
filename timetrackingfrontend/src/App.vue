@@ -4,6 +4,7 @@ import LoginView from './views/LoginView.vue'
 import DashboardView from './views/DashboardView.vue'
 import TimeTrackingView from './views/TimeTrackingView.vue'
 import SickleaveView from './views/SickleaveView.vue'
+import VacationView from './views/VacationView.vue'
 import MonthlyReviewView from './views/MonthlyReviewView.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppFooter from './components/layout/AppFooter.vue'
@@ -70,6 +71,8 @@ const headerMeta = computed(() => {
       return { section: 'Overview', page: 'Personal Dashboard' }
     case 'timetracking':
       return { section: 'Time & Attendance', page: 'Time Tracking' }
+    case 'vacation':
+      return { section: 'Time & Attendance', page: 'Vacation' }
     case 'sickleave':
       return { section: 'Human Resources', page: 'Sickleave' }
     case 'monthly-review':
@@ -124,6 +127,9 @@ const handleOpenHelp = () => {
         />
         <TimeTrackingView 
           v-else-if="activeRoute === 'timetracking'" 
+        />
+        <VacationView 
+          v-else-if="activeRoute === 'vacation'" 
         />
         <SickleaveView 
           v-else-if="activeRoute === 'sickleave' && currentUser.role === 'hr'" 
