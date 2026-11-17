@@ -51,7 +51,7 @@ public class SickLeaveService {
                     return timesheetRepository.save(t);
                 });
 
-        Timeentry entry = new Timeentry(day, null, null, 0, null, TimeEntryType.SICK);
+        Timeentry entry = new Timeentry(day, null, null, 0, TimeEntryType.SICK);
         sheet.addEntry(entry); // sets entry.timesheet, throws if the sheet is already submitted/approved
         timeentryRepository.save(entry); // persist it now, SickLeave needs a saved entry
 

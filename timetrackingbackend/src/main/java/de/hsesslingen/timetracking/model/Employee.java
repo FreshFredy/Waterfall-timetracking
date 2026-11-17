@@ -78,7 +78,6 @@ public class Employee {
         this.supervisor = supervisor;
         setVacationBalance(new VacationBalance( 30, this));
         setFlexAccount(new FlexAccount(100, -100, this));
-        this.timesheets = null;
     }
 
     //Synching both sides of relation
