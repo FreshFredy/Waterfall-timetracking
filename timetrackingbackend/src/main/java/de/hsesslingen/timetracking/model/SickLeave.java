@@ -67,6 +67,12 @@ public class SickLeave {
     public void setExusedEntryNotExcuse(){
         this.exusedEntryType = ExusedEntryType.NOT_EXCUSED;
     }
+    public ExusedEntryType getExusedEntryType(){
+        return this.exusedEntryType ;
+    }
+    public void setExusedEntryType(ExusedEntryType eet){
+        this.exusedEntryType = eet;
+    }
     public String getFileDocNote(){
         return filepath_doctors_note;
     }
@@ -75,6 +81,12 @@ public class SickLeave {
     }
     public Employee getEmployee(){
         return employee;
+    }
+    public HR getCreatedBy(){
+        return createdBy;
+    }
+    public Timeentry getTimeentry(){
+        return timeEntry;
     }
 
 }
