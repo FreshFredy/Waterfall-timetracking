@@ -1,15 +1,15 @@
 package de.hsesslingen.timetracking.service;
 
-import jakarta.persistence.*;
+
 import de.hsesslingen.timetracking.repository.*;
 import de.hsesslingen.timetracking.EntryTypes.*;
 import de.hsesslingen.timetracking.model.*;
-import java.util.Date;
+
 
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import org.springframework.stereotype.*;
+
 import org.springframework.transaction.annotation.Transactional;;;
 
 @Service
@@ -55,7 +55,7 @@ public class SickLeaveService {
         sheet.addEntry(entry); // sets entry.timesheet, throws if the sheet is already submitted/approved
         timeentryRepository.save(entry); // persist it now, SickLeave needs a saved entry
 
-        SickLeave sickLeave = new SickLeave(day, excused, notePath, employee, hr, entry);
+        SickLeave sickLeave = new SickLeave(day, notePath, employee, hr, entry);
         return sickLeaveRepository.save(sickLeave);
     }
 }

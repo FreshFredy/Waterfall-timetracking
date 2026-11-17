@@ -170,6 +170,9 @@ public class Employee {
     public Optional<Timesheet> getTimesheet() {
         return this.timesheets.stream().max(Comparator.comparing(Timesheet::getYear).thenComparing(Timesheet::getMonth));
     }
+    public void addTimesheet(Timesheet timesheet){
+        timesheets.add(timesheet);
+    }
 
     @Override
     public String toString() {
