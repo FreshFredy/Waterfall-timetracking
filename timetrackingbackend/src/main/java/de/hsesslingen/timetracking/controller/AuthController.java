@@ -15,14 +15,14 @@ import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 
 
-@RestController // <-- WICHTIG: Sagt Spring, dass das ein Controller ist
+@RestController 
 @CrossOrigin(origins = "http://localhost:5173")
 public class AuthController {
 
     @Autowired
     private EmployeeRepository employeeRepository;
 
-    @PostMapping("/login") // <-- WICHTIG: Muss exakt /login sein (wegen Vite-Proxy)
+    @PostMapping("/login") 
     public ResponseEntity<?> login(@RequestBody Map<String, String> credentials) {
         String email = credentials.get("email");
         String password = credentials.get("password");
@@ -51,7 +51,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
             "success", true,
             "email", employee.getemail(),
-            "name", employee.getfirstname() + " " + employee.getlastname(),
+            "name", employee.getFirstname() + " " + employee.getLastname(),
             "role", role
         ));
     }

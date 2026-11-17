@@ -1,7 +1,9 @@
 package de.hsesslingen.timetracking.model;
 
 
-import jakarta.persistence.*;
+import jakarta.persistence.DiscriminatorValue;
+import jakarta.persistence.Entity;
 
 @Entity @DiscriminatorValue("HR")
-public class HR extends Employee { }
+public class HR extends Employee {  
+}

@@ -1,6 +1,7 @@
 package de.hsesslingen.timetracking.mapper;
 
 import org.springframework.stereotype.Component;
+
 import de.hsesslingen.timetracking.dto.EmployeeRequestDTO;
 import de.hsesslingen.timetracking.dto.EmployeeResponseDTO;
 import de.hsesslingen.timetracking.model.Employee;
@@ -16,7 +17,7 @@ public class EmployeeMapper {
         EmployeeResponseDTO dto = new EmployeeResponseDTO();
         dto.setId(employee.getId());
         dto.setFirstname(employee.getFirstname());
-        dto.setLastname(employee.getlastName());
+        dto.setLastname(employee.getLastname());
         dto.setEmail(employee.getemail());
         dto.setUsername(employee.getUsername());
         dto.setTargetH(employee.getTargetH());

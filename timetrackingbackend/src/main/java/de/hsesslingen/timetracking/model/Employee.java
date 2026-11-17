@@ -106,7 +106,7 @@ public class Employee {
         this.firstname = firstname;
     }
 
-    public String getlastName() {
+    public String getLastname() {
         return lastname;
     }
 
