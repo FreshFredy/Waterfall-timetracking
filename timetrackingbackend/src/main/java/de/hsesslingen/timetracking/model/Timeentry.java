@@ -1,11 +1,13 @@
 package de.hsesslingen.timetracking.model;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Duration;
+import de.hsesslingen.timetracking.EntryTypes.*;
 
-import java.util.Date;
 
 
-enum entryType {SICK, WORK, FLEXTIME}
 
 @Entity
 @Table(name = "Timeentry")
@@ -16,25 +18,23 @@ public class Timeentry {
     private long id;
 
     @Column(name = "entryDate")
-    private Date entryDate; 
+    private LocalDate entryDate; 
 
     @Column(name = "startDate")
-    private Date startDate; 
+    private LocalTime startDate; 
 
     @Column(name = "endDate")
-    private Date endDate;
+    private LocalTime endDate;
 
     @Column(name = "breakDuration")
     private Integer breakDuration;
 
-    @Column(name = "timesheetID")
-    private long timesheetID;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "timesheet")
+    private Timesheet timesheet;
 
     @Column(name = "entryType")
-    private entryType entryType;
-
-    @Column(name = "project")
-    private String project;
+    private TimeEntryType entryType;
 
     @Column(name = "creditedHours")
     private float creditedHours;
@@ -43,43 +43,59 @@ public class Timeentry {
 
     }
 
-    public Timeentry(Date entryDate, Date startDate, Date endDate, Integer breakDuration, long timesheetID, String project, float creditedHours) {
+    public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, Timesheet timesheetID, TimeEntryType entryType) {
         this.entryDate = entryDate;
         this.startDate = startDate;
         this.breakDuration = breakDuration;
-        this.timesheetID = timesheetID;
-        this.project = project;
-        this.creditedHours = creditedHours;
+        this.timesheet = timesheetID;
+        this.entryType = entryType;
+        calculateCreditedHours();
+    }
+
+    public void calculateCreditedHours(){
+        if (this.entryType != TimeEntryType.SICK) {
+        if (!this.endDate.isAfter(this.startDate) || startDate == null  || endDate == null) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+        if(breakDuration == null) this.breakDuration = 0;
+        long minutes = Duration.between(startDate, endDate).toMinutes() - breakDuration;
+        this.creditedHours = minutes / 60f;
+        }
+        else if(entryType == TimeEntryType.SICK){
+            this.creditedHours = 8;
+        }
     }
 
     public long getId() {
         return id;
     }
 
-   public Date getentryDate(){
+   public LocalDate getentryDate(){
         return entryDate;
    }
-    public Date getstartDate(){
+    public LocalTime getstartDate(){
         return startDate;
    }
-    public Date getendDate(){
+    public LocalTime getendDate(){
         return endDate;
    }
     public Integer getbreakDuration(){
         return breakDuration;
    }
-    public String getProject(){
-        return project;
-   }
-    public entryType getEntryType(){
+
+    public TimeEntryType getEntryType(){
         return entryType;
    }
-    public long gettimesheetID(){
-        return timesheetID;
+    public Timesheet getTimesheet(){
+        return timesheet;
    }
-    public float getcreditedHours(){
+    public void setTimesheet(Timesheet timesheetID){
+        this.timesheet = timesheetID;
+   }
+    public float getCreditedHours(){
         return creditedHours;
    }
+   
 
 
     @Override

@@ -1,8 +1,10 @@
 package de.hsesslingen.timetracking.model;
-
+import de.hsesslingen.timetracking.EntryTypes.*;
+import java.util.ArrayList;
+import java.util.List;
 import jakarta.persistence.*;
 
-enum status { DRAFT, SUBMITTED, APPROVED, REJECTED };
+
 
 @Entity
 @Table(name = "Timesheet")
@@ -19,24 +21,68 @@ public class Timesheet {
     private Integer year;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "status")
-    private status status;
+    private TimesheetStatus status;
 
     @Column(name = "rejection_reason")
     private String rejection_reason;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "employee_id")
-    private Employee employee; // Korrigiert von primitivem employeeID
+    private Employee employee; 
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approver_id")
+    private Supervisor approver;   
+
+    @OneToMany(mappedBy = "timesheet", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Timeentry> timeEntries = new ArrayList<>();
 
     public Timesheet() {}
 
-    public Timesheet(Integer month, Integer year, status status, String rejection_reason, Employee employee) {
+    public Timesheet(Integer month, Integer year, TimesheetStatus status, String rejection_reason, Employee employee) {
         this.month = month;
         this.year = year;
         this.status = status;
         this.rejection_reason = rejection_reason;
         this.employee = employee;
+    }
+
+        public void addEntry(Timeentry entry) {
+        if (status == TimesheetStatus.SUBMITTED || status == TimesheetStatus.APPROVED) {
+            throw new IllegalStateException("Timesheet kann nicht mehr bearbeitet werden");
+        }
+        timeEntries.add(entry);
+        entry.setTimesheet(this);
+    }
+
+    public float getWorkedHours() {
+        float sum = 0;
+        for (Timeentry e : timeEntries) {
+            sum += e.getCreditedHours();
+        }
+        return sum;
+    }
+
+    // Statuswechsel: reine Logik auf eigenen Daten, deshalb in der Entity
+    public void submit() {
+        if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
+            throw new IllegalStateException("Nur offene oder abgelehnte Timesheets können eingereicht werden");
+        }
+        status = TimesheetStatus.SUBMITTED;
+        rejection_reason = null;
+    }
+
+    public void approve(Supervisor supervisor) {
+        if (status != TimesheetStatus.SUBMITTED) throw new IllegalStateException("Nicht eingereicht");
+        status = TimesheetStatus.APPROVED;
+        approver = supervisor;
+    }
+
+    public void reject(Supervisor supervisor, String reason) {
+        if (status != TimesheetStatus.SUBMITTED) throw new IllegalStateException("Nicht eingereicht");
+        status = TimesheetStatus.REJECTED;
+        approver = supervisor;
+        rejection_reason = reason;
     }
 
     public long getId() {
@@ -59,11 +105,11 @@ public class Timesheet {
         this.year = year;
     }
 
-    public status getStatus() {
+    public TimesheetStatus getStatus() {
         return this.status;
     }
 
-    public void setStatus(status status) {
+    public void setStatus(TimesheetStatus status) {
         this.status = status;
     }
 
