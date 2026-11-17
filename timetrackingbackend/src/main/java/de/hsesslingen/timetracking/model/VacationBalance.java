@@ -69,6 +69,9 @@ public class VacationBalance {
     public Employee getEmployee(){
         return employee;
     }
+    public Integer getRemainingDays(){
+        return annual_days + remaining_days_last_year - taken_days;
+    }
 
 
 }

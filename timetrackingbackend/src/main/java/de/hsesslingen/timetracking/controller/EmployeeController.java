@@ -20,7 +20,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import de.hsesslingen.timetracking.dto.EmployeeRequestDTO;
 import de.hsesslingen.timetracking.dto.EmployeeResponseDTO;
+import de.hsesslingen.timetracking.dto.VacationBalanceDTO;
 import de.hsesslingen.timetracking.mapper.EmployeeMapper;
+import de.hsesslingen.timetracking.mapper.VacationBalanceMapper;
 import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 
@@ -33,6 +35,9 @@ public class EmployeeController {
 
     @Autowired
     private EmployeeMapper employeeMapper;
+
+	@Autowired
+	private VacationBalanceMapper vacationBalanceMapper;
 
     @GetMapping("/Employees")
     public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees(@RequestParam(required = false) String email) {
@@ -66,6 +71,16 @@ public class EmployeeController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
     }
+
+
+	@GetMapping("/Employees/{id}/vacation-balance")
+	public ResponseEntity<VacationBalanceDTO> getVacationBalance(@PathVariable("id") long id) {
+		return employeeRepository.findById(id)
+				.map(Employee::getVacationBalance)
+				.map(vacationBalanceMapper::toDto)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
+	}
 
     @PostMapping("/Employees")
     public ResponseEntity<EmployeeResponseDTO> createEmployee(@RequestBody EmployeeRequestDTO requestDTO) {
