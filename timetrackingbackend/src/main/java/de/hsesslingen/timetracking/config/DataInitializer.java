@@ -5,6 +5,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
 import de.hsesslingen.timetracking.model.Employee;
+import de.hsesslingen.timetracking.model.Supervisor;
+import de.hsesslingen.timetracking.model.HR;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 
 //creates 3 testusers for testing purpose as long as database has no real users
@@ -26,17 +28,15 @@ public class DataInitializer implements CommandLineRunner {
             employeeRepository.save(testEmployee);
 
             //TODO Hr und Supervisor construc in Klassen initialisieren
-            /*Supervisor supervisor = new Supervisor(
-                "Anna", "Schmidt", "anna.s", "supervisor@company.com", "123456", 8, null
-            );
+            Supervisor supervisor = new Supervisor(
+                "Anna", "Schmidt", "anna.s", "supervisor@company.com", "123456", 8);
             employeeRepository.save(supervisor);
 
 
             HR hr = new HR(
-                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8, null
-            );
+                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8);
             employeeRepository.save(hr);
-            */
+            
             System.out.println(">>> Test-Benutzer (Employee, Supervisor, HR) wurden geladen! <<<");
         }
     }

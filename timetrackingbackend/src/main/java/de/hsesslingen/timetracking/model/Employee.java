@@ -102,15 +102,15 @@ public class Employee {
         return firstname;
     }
 
-    public void setfirstname(String firstname) {
+    public void setFirstname(String firstname) {
         this.firstname = firstname;
     }
 
-    public String getlastName() {
+    public String getLastname() {
         return lastname;
     }
 
-    public void setlastname(String lastname) {
+    public void setLastname(String lastname) {
         this.lastname = lastname;
     }
 

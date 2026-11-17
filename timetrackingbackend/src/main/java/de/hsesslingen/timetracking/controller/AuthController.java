@@ -51,7 +51,7 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
             "success", true,
             "email", employee.getemail(),
-            "name", employee.getfirstname() + " " + employee.getlastname(),
+            "name", employee.getFirstname() + " " + employee.getLastname(),
             "role", role
         ));
     }

@@ -16,7 +16,7 @@ public class EmployeeMapper {
         EmployeeResponseDTO dto = new EmployeeResponseDTO();
         dto.setId(employee.getId());
         dto.setFirstname(employee.getFirstname());
-        dto.setLastname(employee.getlastName());
+        dto.setLastname(employee.getLastname());
         dto.setEmail(employee.getemail());
         dto.setUsername(employee.getUsername());
         dto.setTargetH(employee.getTargetH());
@@ -43,8 +43,8 @@ public class EmployeeMapper {
         }
 
         Employee employee = new Employee();
-        employee.setfirstname(dto.getFirstname());
-        employee.setlastname(dto.getLastname());
+        employee.setFirstname(dto.getFirstname());
+        employee.setLastname(dto.getLastname());
         employee.setemail(dto.getEmail());
         employee.setUsername(dto.getUsername());
         employee.setPassword(dto.getPassword()); 
@@ -63,8 +63,8 @@ public class EmployeeMapper {
             return;
         }
 
-        employee.setfirstname(dto.getFirstname());
-        employee.setlastname(dto.getLastname());
+        employee.setFirstname(dto.getFirstname());
+        employee.setLastname(dto.getLastname());
         employee.setemail(dto.getEmail());
         employee.setUsername(dto.getUsername());
         if (dto.getPassword() != null && !dto.getPassword().isEmpty()) {

@@ -4,4 +4,10 @@ package de.hsesslingen.timetracking.model;
 import jakarta.persistence.*;
 
 @Entity @DiscriminatorValue("HR")
-public class HR extends Employee { }
+public class HR extends Employee { 
+    public HR() {}
+
+    public HR(String firstname, String lastname, String username, String email, String password, Integer targetH){
+        super(firstname,lastname,username, email,password,targetH, null);
+    }
+}
