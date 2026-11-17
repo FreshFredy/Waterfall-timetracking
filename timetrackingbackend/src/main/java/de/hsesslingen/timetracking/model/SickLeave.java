@@ -41,11 +41,11 @@ public class SickLeave {
     public SickLeave(){
 
     }
-    public SickLeave(LocalDate date, String fileString, Employee employee, HR createdBy, Timeentry timeEntry){
+    public SickLeave(LocalDate date, String fileString, Employee employee, HR createdBy, Timeentry timeEntry, ExusedEntryType exusedEntryType){
         this.date = date;
         this.filepath_doctors_note = fileString;
         this.employee = employee;
-        if(fileString == null)this.exusedEntryType = ExusedEntryType.DOCOTRS_NOTE_MISSING;
+        if(fileString == null && exusedEntryType != ExusedEntryType.EXCUSED)this.exusedEntryType = ExusedEntryType.DOCOTRS_NOTE_MISSING;
         else if(fileString != null)this.exusedEntryType = ExusedEntryType.EXCUSED;
         this.createdBy = createdBy;
         this.timeEntry = timeEntry;

@@ -1,5 +1,7 @@
 package de.hsesslingen.timetracking.mapper;
 
+import org.springframework.stereotype.Component;
+
 import de.hsesslingen.timetracking.EntryTypes.ExusedEntryType;
 
 import de.hsesslingen.timetracking.dto.SickLeaveDTO;
@@ -8,29 +10,27 @@ import de.hsesslingen.timetracking.dto.SickLeaveResponseDTO;
 import de.hsesslingen.timetracking.model.SickLeave;
 
 
+@Component
 public class SickLeaveMapper {
 
-    public SickLeaveResponseDTO toDTO(SickLeave e) {
-        if (e == null) {
-            return null;
-        }
+    public SickLeaveResponseDTO toDTO(SickLeave s) {
         return new SickLeaveResponseDTO(
-
-            e.getID(),
-            e.getDate(),
-            e.getFileDocNote(),
-            e.getExusedEntryType(),
-            e.getEmployee(),
-            e.getCreatedBy(),
-            e.getTimeentry()
+            s.getID(),
+            s.getDate(),
+            s.getExusedEntryType(),
+            s.getFileDocNote(),
+            s.getEmployee().getId(),
+            s.getCreatedBy().getId(),
+            s.getTimeentry() != null ? s.getTimeentry().getId() : null
         );
     }
+
     public void updateSickLeaveFromDTO(SickLeaveDTO dto, SickLeave sc) {
-        if(dto.filepath_doctors_note() != null) {
-            sc.setFileDocNote(dto.filepath_doctors_note());
-            sc.setExusedEntryType(dto.exusedEntryType());
+        if(dto.doctorsNotePath() != null) {
+            sc.setFileDocNote(dto.doctorsNotePath());
+            sc.setExusedEntryType(dto.excused());
         }
-        else if(dto.filepath_doctors_note() == null) sc.setExusedEntryType (ExusedEntryType.NOT_EXCUSED);
+        else if(dto.doctorsNotePath() == null) sc.setExusedEntryType (ExusedEntryType.NOT_EXCUSED);
         
     }
 

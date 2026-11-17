@@ -19,7 +19,7 @@ public class TimeentryMapper {
             e.getStartDate(),
             e.getEndDate(),
             e.getbreakDuration(),
-            e.getEntryType(),
+            e.getEntry_type(),
             e.getCreditedHours()
         );
     }

@@ -34,7 +34,7 @@ public class Timeentry {
     private Timesheet timesheet;
 
     @Enumerated(EnumType.STRING)
-    private TimeEntryType entryType;
+    private TimeEntryType entry_type;
 
     @Column(name = "creditedHours")
     private float creditedHours;
@@ -48,12 +48,12 @@ public class Timeentry {
         this.startDate = startDate;
         this.endDate = endDate;
         this.breakDuration = breakDuration;
-        this.entryType = entryType;
+        this.entry_type = entryType;
         calculateCreditedHours();
     }
 
     public void calculateCreditedHours(){
-     if (entryType == TimeEntryType.SICK) {
+     if (entry_type == TimeEntryType.SICK) {
         this.creditedHours = 8;
         return;
     }
@@ -82,8 +82,8 @@ public class Timeentry {
         return breakDuration;
    }
 
-    public TimeEntryType getEntryType(){
-        return entryType;
+    public TimeEntryType getEntry_type(){
+        return entry_type;
    }
     public Timesheet getTimesheet(){
         return timesheet;
@@ -100,7 +100,7 @@ public class Timeentry {
     this.startDate = startDate;
     this.endDate = endDate;
     this.breakDuration = breakDuration;
-    this.entryType = entryType;
+    this.entry_type = entryType;
     calculateCreditedHours();
 }
 

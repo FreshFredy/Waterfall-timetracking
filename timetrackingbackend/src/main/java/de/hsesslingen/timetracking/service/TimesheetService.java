@@ -93,7 +93,7 @@ public class TimesheetService {
                 .findFirst()
                 .orElseThrow(() -> new NoSuchElementException(
                         "Entry " + entryId + " not found in timesheet " + timesheetId));
-        if (entry.getEntryType() == TimeEntryType.SICK) {
+        if (entry.getEntry_type() == TimeEntryType.SICK) {
             throw new IllegalStateException("Sick entries are managed by HR");
         }
 
