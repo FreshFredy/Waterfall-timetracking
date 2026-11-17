@@ -1,16 +1,91 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
+import EmployeeService from '../services/api.js'
+
+const props = defineProps({
+  activeRoute: { type: String, required: true },
+  role: { type: String, default: 'employee' },
+  user: {
+    type: Object,
+    default: () => ({ initials: '', name: '', title: '', email: '' }),
+  },
+  pendingReviewsCount: { type: Number},
+  employeeId: { type: Number,}
+})
+
+const takenVacationDays = ref("Laden...")
+const availableVacationDays = ref("Laden...")
+const plannedVacationDays = ref("Laden...")
+const remainingVacationDays = ref(0)
+
+const fetchVacationData = async () => {
+    try {
+        let currentId = props.employeeId;
+
+        // ID dynamisch über E-Mail auflösen, falls nicht explizit gesetzt
+        if ((!currentId || currentId === 1) && props.user && props.user.email) {
+            const employeesResponse = await EmployeeService.getAll(props.user.email);
+            if (employeesResponse.data && employeesResponse.data.length > 0) {
+                currentId = employeesResponse.data[0].id;
+            }
+        }
+
+        // Sicherheitsabfrage: Wenn keine ID da ist, abbrechen (verhindert 'undefined' in der URL)
+        if (!currentId || currentId === 'undefined') {
+            console.log("Warte auf gültige Mitarbeiter-ID / User-Daten...");
+            return;
+        }
+
+        // Urlaubsdaten vom Backend abrufen
+        const vacationResponse = await EmployeeService.getVacationBalance(currentId)
+        const vacData = vacationResponse.data || {}
+        
+        console.log("Urlaub vom Backend empfangen:", vacData)
+
+        const annual = vacData.annualDays !== undefined && vacData.annualDays !== null ? vacData.annualDays : 30;
+        const taken = vacData.takenDays !== undefined && vacData.takenDays !== null ? vacData.takenDays : 0;
+        const planned = vacData.plannedDays !== undefined && vacData.plannedDays !== null ? vacData.plannedDays : 0;
+        const remainingLastYear = vacData.remainingDays_last_year !== undefined && vacData.remainingDays_last_year !== null ? vacData.remainingDays_last_year : 0;
+
+        takenVacationDays.value = taken;
+        plannedVacationDays.value = planned;
+
+        const calculatedRemaining = vacData.remainingDays !== undefined && vacData.remainingDays !== null
+            ? vacData.remainingDays 
+            : ((annual + remainingLastYear) - (taken + planned));
+
+        availableVacationDays.value = calculatedRemaining;
+        remainingVacationDays.value = calculatedRemaining;
+
+    } catch (error) {
+        console.error("Fehler beim Laden der Urlaubsdaten:", error)
+        takenVacationDays.value = "–"
+        plannedVacationDays.value = "–"
+        availableVacationDays.value = "–"
+        remainingVacationDays.value = "–"
+    }
+}
+
+// Reagiert auf Routenwechsel (z.B. Klick auf den Menüpunkt) und Daten-Updates
+watch(
+  () => [props.activeRoute, props.employeeId, props.user?.email],
+  ([route]) => {
+    // Optional: Nur laden, wenn man sich auf der Urlaubs-Route befindet (passe den Namen ggf. an, z.B. 'vacation' oder 'urlaub')
+    if (route) {
+        fetchVacationData()
+    }
+  },
+  { immediate: true }
+)
 
 // Formular-Zustand (leer gestartet)
 const form = ref({
   startDate: '',
   endDate: '',
-  type: 'Erholungsurlaub',
-  comment: '',
 })
 
-const leaveTypes = ['Erholungsurlaub', 'Sonderurlaub', 'Unbezahlter Urlaub', 'Gleitzeitabbau']
+
 const vacationEntries = ref([])
 
 // Berechnet die Arbeitstage (Mo–Fr) zwischen Start- und Enddatum
@@ -39,18 +114,6 @@ const vacationStats = computed(() => {
   }
 })
 
-// Dynamische Zähler basierend auf den tatsächlichen Einträgen
-const plannedDays = computed(() => {
-  return vacationEntries.value
-    .filter(e => e.status === 'Ausstehend')
-    .reduce((sum, e) => sum + e.days, 0)
-})
-
-const takenDays = computed(() => {
-  return vacationEntries.value
-    .filter(e => e.status === 'Genehmigt')
-    .reduce((sum, e) => sum + e.days, 0)
-})
 
 const handleAddVacation = () => {
   if (vacationStats.value.days <= 0) {
@@ -90,16 +153,16 @@ const handleAddVacation = () => {
       <div class="tt-actions">
         <div class="quota-pill">
           <span>Resturlaub 2026:</span>
-          <strong>{{ 30 - takenDays }} Tage</strong>
+          <strong>{{ remainingVacationDays }} Tage</strong>
         </div>
       </div>
     </div>
 
     <div class="tt-subbar">
       <div class="submitted-count">
-        <span>Genommen: <strong>{{ takenDays }} Tage</strong></span>
+        <span>Genommen: <strong>{{ takenVacationDays }} Tage</strong></span>
         <span>•</span>
-        <span>Geplant: <strong>{{ plannedDays }} Tage</strong></span>
+        <span>Geplant: <strong>{{ plannedVacationDays }} Tage</strong></span>
       </div>
     </div>
 
@@ -128,7 +191,6 @@ const handleAddVacation = () => {
             <tr v-else v-for="entry in vacationEntries" :key="entry.id" class="data-tr">
               <td class="td-date">{{ entry.period }}</td>
               <td class="td-net-val">{{ entry.days }} {{ entry.days === 1 ? 'Tag' : 'Tage' }}</td>
-              <td>{{ entry.type }}</td>
               <td>
                 <StatusBadge :variant="entry.variant" :label="entry.status" />
               </td>

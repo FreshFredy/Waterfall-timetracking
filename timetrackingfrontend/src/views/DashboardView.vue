@@ -116,9 +116,7 @@ onMounted(() => {
             <span class="vacation-value">{{ availableVacationDays }} Tage</span>
           </div>
           
-          <button class="btn-primary" @click="handleRequestVacation">
-            🏖️ Urlaub beantragen
-          </button>
+        <button @click="emit('navigate', 'vacation')" class="view-timesheet-link">Zum Urlaub →</button>
         </div>
       </div>
 

@@ -129,7 +129,9 @@ const handleOpenHelp = () => {
           v-else-if="activeRoute === 'timetracking'" 
         />
         <VacationView 
-          v-else-if="activeRoute === 'vacation'" 
+          v-else-if="activeRoute === 'vacation'"
+          :user="currentUser"
+          :active-route="activeRoute" 
         />
         <SickleaveView 
           v-else-if="activeRoute === 'sickleave' && currentUser.role === 'hr'" 

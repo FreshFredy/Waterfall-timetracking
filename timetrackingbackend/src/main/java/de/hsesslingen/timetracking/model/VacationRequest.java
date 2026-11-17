@@ -1,8 +1,15 @@
 package de.hsesslingen.timetracking.model;
 
-import jakarta.persistence.*;
-
 import java.util.Date;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 
 @Entity
@@ -22,8 +29,8 @@ public class VacationRequest {
     @Column(name = "rejection_reason")
     private String rejection_reason;
 
-    @OneToOne
-    @JoinColumn(name = "employee_id", referencedColumnName = "id", unique = true)
+    @ManyToOne
+    @JoinColumn(name = "employee_id", referencedColumnName = "id")
     private Employee employee;
 
 public VacationRequest() {}
