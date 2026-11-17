@@ -63,7 +63,6 @@ public class Timesheet {
         return sum;
     }
 
-    // Statuswechsel: reine Logik auf eigenen Daten, deshalb in der Entity
     public void submit() {
         if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
             throw new IllegalStateException("Nur offene oder abgelehnte Timesheets können eingereicht werden");

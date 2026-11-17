@@ -72,6 +72,9 @@ public class VacationBalance {
     public Integer getRemainingDays(){
         return annual_days + remaining_days_last_year - taken_days;
     }
+    public void resetTakenDays(){
+        this.taken_days = 0;
+    }
 
 
 }

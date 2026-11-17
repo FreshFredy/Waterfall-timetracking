@@ -78,6 +78,7 @@ public class Employee {
         this.supervisor = supervisor;
         setVacationBalance(new VacationBalance( 30, this));
         setFlexAccount(new FlexAccount(100, -100, this));
+        this.timesheets = null;
     }
 
     //Synching both sides of relation
@@ -171,7 +172,8 @@ public class Employee {
         return this.timesheets.stream().max(Comparator.comparing(Timesheet::getYear).thenComparing(Timesheet::getMonth));
     }
     public void addTimesheet(Timesheet timesheet){
-        timesheets.add(timesheet);
+        this.timesheets.add(timesheet);
+        timesheet.setEmployee(this);
     }
 
     @Override
