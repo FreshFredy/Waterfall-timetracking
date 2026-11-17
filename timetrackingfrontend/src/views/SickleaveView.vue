@@ -29,7 +29,7 @@ const totalCreditHours = computed(() => `${previewDays.value.length * 8}:00 h`)
     <div class="sl-header">
       <span class="tagline">HUMAN RESOURCES</span>
       <h1 class="sl-title">Sickleave</h1>
-      <p class="sl-desc">Record an employee’s absence. Credited hours follow their work schedule.</p>
+      <p class="sl-desc">Krankmeldung eines Mitarbeiters erstellen</p>
     </div>
 
     <div class="sl-split">
@@ -38,7 +38,7 @@ const totalCreditHours = computed(() => `${previewDays.value.length * 8}:00 h`)
           <h2 class="box-title">Record Sickleave</h2>
           <StatusBadge variant="neutral" label="Draft" />
         </div>
-        <p class="form-desc">Select an employee and the absence dates.</p>
+        <p class="form-desc">ID</p>
 
         <div class="input-label">
           Employee

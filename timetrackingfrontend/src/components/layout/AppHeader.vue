@@ -1,8 +1,16 @@
 <script setup>
+import { computed } from 'vue'
 defineProps({
   section: { type: String, required: true },
   page: { type: String, required: true },
-  currentDate: { type: String, default: 'Thu, 01 October 2026' },
+})
+const currentDate = computed(() => {
+  return new Date().toLocaleDateString('de-DE', {
+    weekday: 'short',
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  })
 })
 </script>
 
@@ -17,7 +25,6 @@ defineProps({
       <div class="date-text">{{ currentDate }}</div>
       <div class="divider"></div>
       <div class="icon-placeholder">🔔</div>
-      <div class="icon-placeholder">⚙️</div>
     </div>
   </header>
 </template>
