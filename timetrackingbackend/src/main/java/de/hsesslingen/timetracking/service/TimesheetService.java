@@ -10,15 +10,19 @@ import de.hsesslingen.timetracking.EntryTypes.TimeEntryType;
 import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.dto.TimeentryRequestDTO;
 import de.hsesslingen.timetracking.dto.TimesheetDTO;
+import de.hsesslingen.timetracking.dto.*;
 import de.hsesslingen.timetracking.mapper.TimeentryMapper;
 import de.hsesslingen.timetracking.mapper.TimesheetMapper;
+import de.hsesslingen.timetracking.mapper.NotificationMapper;
 import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.model.Supervisor;
 import de.hsesslingen.timetracking.model.Timeentry;
 import de.hsesslingen.timetracking.model.Timesheet;
+import de.hsesslingen.timetracking.model.Notification;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 import de.hsesslingen.timetracking.repository.SupervisorRepository;
 import de.hsesslingen.timetracking.repository.TimesheetRepository;
+import de.hsesslingen.timetracking.repository.NotificationRepository;
 
 @Service
 public class TimesheetService {
@@ -28,17 +32,20 @@ public class TimesheetService {
     private final SupervisorRepository supervisorRepository;
     private final TimesheetMapper timesheetMapper;
     private final TimeentryMapper timeentryMapper;
+    private final NotificationService notificationService;
 
     public TimesheetService(TimesheetRepository timesheetRepository,
                             EmployeeRepository employeeRepository,
                             SupervisorRepository supervisorRepository,
                             TimesheetMapper timesheetMapper,
-                            TimeentryMapper timeentryMapper) {
+                            TimeentryMapper timeentryMapper,
+                        NotificationService notificationMapper) {
         this.timesheetRepository = timesheetRepository;
         this.employeeRepository = employeeRepository;
         this.supervisorRepository = supervisorRepository;
         this.timesheetMapper = timesheetMapper;
         this.timeentryMapper = timeentryMapper;
+        this.notificationService = notificationMapper;
     }
 
     // ---------- read ----------
@@ -107,7 +114,10 @@ public class TimesheetService {
     public TimesheetDTO submit(long timesheetId) {
         Timesheet sheet = findTimesheet(timesheetId);
         sheet.submit();
-        // TODO: notificationService.notify(supervisor, "Timesheet submitted")
+        Employee employee = sheet.getEmployee();
+        notificationService.notify(employee.getSupervisor(),
+            employee.getFirstname() + " " + employee.getLastname()
+            + " submitted the timesheet for " + sheet.getMonth() + "/" + sheet.getYear());
         return timesheetMapper.toDTO(sheet);
     }
 
@@ -117,7 +127,8 @@ public class TimesheetService {
     public TimesheetDTO approve(long timesheetId, long supervisorId) {
         Timesheet sheet = findTimesheet(timesheetId);
         sheet.approve(requireResponsibleSupervisor(sheet, supervisorId));
-        // TODO: notify the employee
+        notificationService.notify(sheet.getEmployee(),
+            "Your timesheet for " + sheet.getMonth() + "/" + sheet.getYear() + " was approved");
         return timesheetMapper.toDTO(sheet);
     }
 
@@ -129,6 +140,8 @@ public class TimesheetService {
         Timesheet sheet = findTimesheet(timesheetId);
         sheet.reject(requireResponsibleSupervisor(sheet, supervisorId), reason);
         // TODO: notify the employee
+        notificationService.notify(sheet.getEmployee(),
+        "Your timesheet for " + sheet.getMonth() + "/" + sheet.getYear() + " was rejected: " + reason);
         return timesheetMapper.toDTO(sheet);
     }
 
@@ -157,4 +170,5 @@ public class TimesheetService {
             throw new IllegalArgumentException("Sick days are recorded by HR, not as work time");
         }
     }
+
 }

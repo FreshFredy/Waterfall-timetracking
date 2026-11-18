@@ -22,17 +22,20 @@ public class SickLeaveService {
     private final TimeentryRepository timeentryRepository;
     private final SickLeaveRepository sickLeaveRepository;
     private final SickLeaveMapper sickLeaveMapper;
+    private final NotificationService notificationService;
 
     public SickLeaveService(EmployeeRepository employeeRepository,
                             TimesheetRepository timesheetRepository,
                             TimeentryRepository timeentryRepository,
                             SickLeaveRepository sickLeaveRepository,
-                            SickLeaveMapper sickLeaveMapper) {
+                            SickLeaveMapper sickLeaveMapper,
+                            NotificationService notificationService) {
         this.employeeRepository = employeeRepository;
         this.timesheetRepository = timesheetRepository;
         this.timeentryRepository = timeentryRepository;
         this.sickLeaveRepository = sickLeaveRepository;
         this.sickLeaveMapper = sickLeaveMapper;
+        this.notificationService = notificationService;
     }
 @Transactional(readOnly = true)
 public SickLeaveResponseDTO getSickLeave(long id) {
@@ -61,6 +64,8 @@ public SickLeaveResponseDTO recordSickLeave(long hrId, SickLeaveDTO dto) {
                 Timesheet t = new Timesheet(dto.day().getMonthValue(), dto.day().getYear(),
                         TimesheetStatus.DRAFT, null, employee);
                 employee.addTimesheet(t);
+                String hint = dto.excused() == ExusedEntryType.DOCOTRS_NOTE_MISSING ? " Please hand in your doctor's note." : "";
+                    notificationService.notify(employee, "HR recorded a sick day for you on " + dto.day() + "." + hint);
                 return timesheetRepository.save(t);
             });
 
