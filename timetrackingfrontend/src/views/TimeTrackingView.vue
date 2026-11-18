@@ -312,7 +312,7 @@ onMounted(() => {
           </div>
 
           <button type="submit" class="submit-btn">
-            <span>✓</span><span>Submit</span>
+            <span>✓</span><span>Zeit einreichen</span>
           </button>
         </form>
       </div>

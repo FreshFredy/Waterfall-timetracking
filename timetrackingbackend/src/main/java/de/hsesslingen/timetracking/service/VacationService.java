@@ -1,18 +1,23 @@
 package de.hsesslingen.timetracking.service;
 
 
-import de.hsesslingen.timetracking.repository.*;
-import de.hsesslingen.timetracking.EntryTypes.*;
-import de.hsesslingen.timetracking.model.*;
+import java.time.LocalDate;
+import java.util.List;
+import java.util.NoSuchElementException;
 
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import de.hsesslingen.timetracking.EntryTypes.VacationStatus;
 import de.hsesslingen.timetracking.dto.VacationRequestCreateDTO;
 import de.hsesslingen.timetracking.dto.VacationRequestResponseDTO;
 import de.hsesslingen.timetracking.mapper.VacationRequestMapper;
-import org.springframework.stereotype.Service;
-import java.time.LocalDate;
-import java.util.*;
-
-import org.springframework.transaction.annotation.Transactional;;;
+import de.hsesslingen.timetracking.model.Employee;
+import de.hsesslingen.timetracking.model.Supervisor;
+import de.hsesslingen.timetracking.model.VacationRequest;
+import de.hsesslingen.timetracking.repository.EmployeeRepository;
+import de.hsesslingen.timetracking.repository.SupervisorRepository;
+import de.hsesslingen.timetracking.repository.VacationRequestRepository;
 
 
 @Service
@@ -100,16 +105,26 @@ public class VacationService {
         if (!request.getStartDate().isAfter(LocalDate.now())) {
             throw new IllegalStateException("Vacation has already started");
         }
-        request.cancel();                                      // throws if not PENDING/APPROVED
-        request.getEmployee().getVacationBalance().releaseDays(request.getWorkingDays());
-        boolean wasApproved = request.getStatus() == VacationStatus.APPROVED;   // before request.cancel()
-// ... request.cancel() and releaseDays(...)
+
+        // Prüfen, ob der Antrag vor dem Canceln genehmigt war
+        boolean wasApproved = request.getStatus() == VacationStatus.APPROVED;
+        int workingDays = request.getWorkingDays();
+
+        request.cancel(); // Setzt den Status auf CANCELLED
+
+        // Kontostand je nach vorherigem Status korrekt zurücksetzen
         if (wasApproved) {
+            request.getEmployee().getVacationBalance().cancelApprovedDays(workingDays);
+            
             Employee e = request.getEmployee();
             notificationService.notify(e.getSupervisor(),
-            e.getFirstname() + " " + e.getLastname() + " cancelled the approved vacation from "
-            + request.getStartDate() + " to " + request.getEndDate());
+                e.getFirstname() + " " + e.getLastname() + " cancelled the approved vacation from "
+                + request.getStartDate() + " to " + request.getEndDate());
+        } else {
+            // War noch PENDING, Tage waren also in planned_days gespeichert
+            request.getEmployee().getVacationBalance().releaseDays(workingDays);
         }
+
         return vacationRequestMapper.toDTO(request);
     }
 
@@ -118,9 +133,16 @@ public class VacationService {
     @Transactional
     public VacationRequestResponseDTO approve(long requestId, long supervisorId) {
         VacationRequest request = findRequest(requestId);
+        
+        // 1. Antrag genehmigen
         request.approve(requireResponsibleSupervisor(request, supervisorId));
+        
+        // 2. Tage von planned_days in taken_days übertragen
+        request.getEmployee().getVacationBalance().approveDays(request.getWorkingDays());
+
+        // 3. Benachrichtigung an den Mitarbeiter senden
         notificationService.notify(request.getEmployee(),
-        "Your vacation from " + request.getStartDate() + " to " + request.getEndDate() + " was approved");
+            "Your vacation from " + request.getStartDate() + " to " + request.getEndDate() + " was approved");
 
         return vacationRequestMapper.toDTO(request);
     }
@@ -132,10 +154,14 @@ public class VacationService {
         }
         VacationRequest request = findRequest(requestId);
         request.reject(requireResponsibleSupervisor(request, supervisorId), reason);
+        
         notificationService.notify(request.getEmployee(),
-        "Your vacation from " + request.getStartDate() + " to " + request.getEndDate()
+            "Your vacation from " + request.getStartDate() + " to " + request.getEndDate()
             + " was rejected: " + reason);
+            
+        // Bei Ablehnung waren die Tage in planned_days und werden wieder freigegeben
         request.getEmployee().getVacationBalance().releaseDays(request.getWorkingDays());
+        
         return vacationRequestMapper.toDTO(request);
     }
 

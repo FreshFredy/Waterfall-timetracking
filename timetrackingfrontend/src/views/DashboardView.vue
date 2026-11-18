@@ -126,7 +126,7 @@ onMounted(() => {
   <div class="dashboard-container">
     <div class="top-row">
       <div class="welcome-col">
-        <div class="tagline">YOUR PERSONAL DASHBOARD</div>
+        <div class="tagline">DASHBOARD</div>
         <h1 class="greeting">Hallo {{ user.name }}</h1>
         <p class="sub-greeting">Hier ist dein monatlicher Recap.</p>
       </div>

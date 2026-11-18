@@ -1,6 +1,13 @@
 package de.hsesslingen.timetracking.model;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.Table;
 
 
 @Entity
@@ -87,5 +94,13 @@ public void releaseDays(int days) {
     planned_days = Math.max(0, planned_days - days);
 }
 
+public void approveDays(int days) {
+    planned_days = Math.max(0, this.planned_days - days);
+    taken_days += days;
+}
+
+public void cancelApprovedDays(int days) {
+    taken_days = Math.max(0, taken_days - days);
+}
 
 }
