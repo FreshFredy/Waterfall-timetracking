@@ -138,7 +138,7 @@ public class TimesheetService {
         }
         Timesheet sheet = findTimesheet(timesheetId);
         sheet.reject(requireResponsibleSupervisor(sheet, supervisorId), reason);
-        // TODO: notify the employee
+    
         notificationService.notify(sheet.getEmployee(),
         "Your timesheet for " + sheet.getMonth() + "/" + sheet.getYear() + " was rejected: " + reason);
         return timesheetMapper.toDTO(sheet);
