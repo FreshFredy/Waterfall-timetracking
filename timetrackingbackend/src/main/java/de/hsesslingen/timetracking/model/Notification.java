@@ -1,9 +1,7 @@
 package de.hsesslingen.timetracking.model;
 
+import java.time.LocalDateTime;
 import jakarta.persistence.*;
-
-import java.util.Date;
-
 
 @Entity
 @Table(name = "Notification")
@@ -13,67 +11,33 @@ public class Notification {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private long id;
 
-    @Column(name = "message")
-    private String message; 
+    @Column(name = "message", nullable = false, length = 500)
+    private String message;
 
-    @Column(name = "created_at")
-    private Date created_at;
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
-    @Column(name = "read")
+    @Column(name = "is_read", nullable = false)
     private boolean read;
 
-    @OneToOne
-    @JoinColumn(name = "employee_id_from", referencedColumnName = "id", unique = true)
-    private Employee employee_from;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)     // Employee 1 – 0..* Notification
+    @JoinColumn(name = "recipient_id")
+    private Employee recipient;
 
-    @OneToOne
-    @JoinColumn(name = "employee_id_to", referencedColumnName = "id", unique = true)
-    private Employee employee_to;
+    public Notification() {}
 
-    public Notification (){}
-    public Notification (String message, Date created_at, Employee employee_from, Employee employee_to){
+    public Notification(Employee recipient, String message) {
+        this.recipient = recipient;
         this.message = message;
-        this.created_at = created_at;
-        this.employee_from = employee_from;
-        this.employee_to = employee_to;
-        read = false;
+        this.createdAt = LocalDateTime.now();
+        this.read = false;
     }
 
-    public long getID(){
-        return id;
-    }
-    public String getMessage(){
-        return message;
-    }
-    public void setMessage(String message){
-        this.message = message;
-    }
-    public boolean getRead(){
-        return read;
-    }
-    public void setRead(boolean read){
-        this.read = read;
-    }
-    public Date getCreated_at(){
-        return created_at;
-    }
-    public void setCreated_at(Date created_at){
-        this.created_at = created_at;
-    }
-    public Employee getSender(){
-        return employee_from;
-    }
-    public void setSender(Employee employee_from){
-        this.employee_from = employee_from;
-    }
-    public Employee getEmpf(){
-        return employee_to;
-    }
-    public void setEMpf(Employee employee_to){
-        this.employee_to = employee_to;
-    }
+    public void markRead() { this.read = true; }
 
-
-
-
+    public long getId() { return id; }
+    public String getMessage() { return message; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public boolean isRead() { return read; }
+    public Employee getRecipient() { return recipient; }
 }

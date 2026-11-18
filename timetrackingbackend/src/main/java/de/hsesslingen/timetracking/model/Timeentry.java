@@ -33,8 +33,8 @@ public class Timeentry {
     @JoinColumn(name = "timesheet")
     private Timesheet timesheet;
 
-    @Column(name = "entryType")
-    private TimeEntryType entryType;
+    @Enumerated(EnumType.STRING)
+    private TimeEntryType entry_type;
 
     @Column(name = "creditedHours")
     private float creditedHours;
@@ -43,48 +43,47 @@ public class Timeentry {
 
     }
 
-    public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, Timesheet timesheetID, TimeEntryType entryType) {
+    public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, TimeEntryType entryType) {
         this.entryDate = entryDate;
         this.startDate = startDate;
+        this.endDate = endDate;
         this.breakDuration = breakDuration;
-        this.timesheet = timesheetID;
-        this.entryType = entryType;
+        this.entry_type = entryType;
         calculateCreditedHours();
     }
 
     public void calculateCreditedHours(){
-        if (this.entryType != TimeEntryType.SICK) {
-        if (!this.endDate.isAfter(this.startDate) || startDate == null  || endDate == null) {
-            throw new IllegalArgumentException("End time must be after start time");
-        }
-        if(breakDuration == null) this.breakDuration = 0;
-        long minutes = Duration.between(startDate, endDate).toMinutes() - breakDuration;
-        this.creditedHours = minutes / 60f;
-        }
-        else if(entryType == TimeEntryType.SICK){
-            this.creditedHours = 8;
-        }
+     if (entry_type == TimeEntryType.SICK) {
+        this.creditedHours = 8;
+        return;
     }
+    if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+        throw new IllegalArgumentException("End time must be after start time");
+    }
+    if (breakDuration == null) breakDuration = 0;
+    long minutes = Duration.between(startDate, endDate).toMinutes() - breakDuration;
+    this.creditedHours = minutes / 60f;
+}
 
     public long getId() {
         return id;
     }
 
-   public LocalDate getentryDate(){
+   public LocalDate getEntryDate(){
         return entryDate;
    }
-    public LocalTime getstartDate(){
+    public LocalTime getStartDate(){
         return startDate;
    }
-    public LocalTime getendDate(){
+    public LocalTime getEndDate(){
         return endDate;
    }
     public Integer getbreakDuration(){
         return breakDuration;
    }
 
-    public TimeEntryType getEntryType(){
-        return entryType;
+    public TimeEntryType getEntry_type(){
+        return entry_type;
    }
     public Timesheet getTimesheet(){
         return timesheet;
@@ -95,7 +94,15 @@ public class Timeentry {
     public float getCreditedHours(){
         return creditedHours;
    }
-   
+   public void update(LocalDate entryDate, LocalTime startDate, LocalTime endDate,
+                   Integer breakDuration, TimeEntryType entryType) {
+    this.entryDate = entryDate;
+    this.startDate = startDate;
+    this.endDate = endDate;
+    this.breakDuration = breakDuration;
+    this.entry_type = entryType;
+    calculateCreditedHours();
+}
 
 
     @Override

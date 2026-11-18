@@ -75,6 +75,17 @@ public class VacationBalance {
     public void resetTakenDays(){
         this.taken_days = 0;
     }
+public void reserveDays(int days) {
+    // remainingDays does not subtract planned days, so both are checked here
+    if (days > getRemainingDays() - planned_days) {
+        throw new IllegalStateException("Not enough vacation days left");
+    }
+    planned_days += days;
+}
+
+public void releaseDays(int days) {
+    planned_days = Math.max(0, planned_days - days);
+}
 
 
 }

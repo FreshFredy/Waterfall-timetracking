@@ -1,5 +1,7 @@
 package de.hsesslingen.timetracking.model;
 import de.hsesslingen.timetracking.EntryTypes.*;
+
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import jakarta.persistence.*;
@@ -7,7 +9,7 @@ import jakarta.persistence.*;
 
 
 @Entity
-@Table(name = "Timesheet")
+@Table(name = "Timesheet", uniqueConstraints = @UniqueConstraint(columnNames = {"employee_id", "month", "year"}))
 public class Timesheet {
 
     @Id
@@ -47,13 +49,24 @@ public class Timesheet {
         this.employee = employee;
     }
 
-        public void addEntry(Timeentry entry) {
-        if (status == TimesheetStatus.SUBMITTED || status == TimesheetStatus.APPROVED) {
-            throw new IllegalStateException("Timesheet kann nicht mehr bearbeitet werden");
-        }
-        timeEntries.add(entry);
-        entry.setTimesheet(this);
+public void checkEditable() {
+    if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
+        throw new IllegalStateException("Timesheet can no longer be edited (status " + status + ")");
     }
+}
+
+public void checkInPeriod(LocalDate date) {
+    if (date == null || date.getMonthValue() != month || date.getYear() != year) {
+        throw new IllegalArgumentException("Entry date must be in " + month + "/" + year);
+    }
+}
+
+public void addEntry(Timeentry entry) {
+    checkEditable();
+    checkInPeriod(entry.getEntryDate());
+    timeEntries.add(entry);
+    entry.setTimesheet(this);
+}
 
     public float getWorkedHours() {
         float sum = 0;
@@ -127,6 +140,16 @@ public class Timesheet {
     public void setEmployee(Employee employee) {
         this.employee = employee;
     }
+    public Supervisor getApprover(){
+        return approver;
+    }
+    public void setApprover(Supervisor approver){
+        this.approver = approver;
+    }
+    public List<Timeentry> getTimeEntries(){
+        return this.timeEntries;
+    }
+
 
     @Override
     public String toString() {

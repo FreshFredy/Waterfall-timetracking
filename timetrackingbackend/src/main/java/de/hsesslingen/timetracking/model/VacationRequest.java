@@ -1,17 +1,10 @@
 package de.hsesslingen.timetracking.model;
 
-import java.util.Date;
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
-
+import de.hsesslingen.timetracking.EntryTypes.VacationStatus;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "VacationRequest")
@@ -22,50 +15,76 @@ public class VacationRequest {
     private long id;
 
     @Column(name = "start_date")
-    private Date start_date; 
+    private LocalDate startDate;
 
-    @Column(name = "end_Date")
-    private Date end_date;
+    @Column(name = "end_date")
+    private LocalDate endDate;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status")
+    private VacationStatus status = VacationStatus.PENDING;
 
     @Column(name = "rejection_reason")
-    private String rejection_reason;
+    private String rejectionReason;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "employee_id")
     private Employee employee;
 
-public VacationRequest() {}
-public VacationRequest(Date start_date, Date end_date, Employee employee) {
-    this.start_date = start_date;
-    this.end_date = end_date;
-    this.rejection_reason = "";
-    this.employee = employee;
-}
-    public long getID(){
-        return id;
-    }
-    public void setStartDate(Date start_date){
-        this.start_date = start_date;
-    }
-    public Date getStartDate(){
-        return start_date;
-    }
-    public void setEndDate(Date end_date){
-        this.end_date = end_date;
-    }
-    public Date getEndDate(){
-        return end_date;
-    }
-    public void setRejectionReason(String rejection_reason){
-        this.rejection_reason = rejection_reason;
-    }
-    public String getRejectionReason(){
-        return rejection_reason;
-    }
-    public void setEmployee(Employee employee){
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "approver_id")
+    private Supervisor approver;             // set when reviewed
+
+    public VacationRequest() {}
+
+    public VacationRequest(LocalDate startDate, LocalDate endDate, Employee employee) {
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.employee = employee;
+        this.status = VacationStatus.PENDING;
     }
-    public Employee getEmployee(){
-        return employee;
+
+    // Monday to Friday between start and end, both included (public holidays not considered)
+    public int getWorkingDays() {
+        int days = 0;
+        for (LocalDate d = startDate; !d.isAfter(endDate); d = d.plusDays(1)) {
+            DayOfWeek dow = d.getDayOfWeek();
+            if (dow != DayOfWeek.SATURDAY && dow != DayOfWeek.SUNDAY) {
+                days++;
+            }
+        }
+        return days;
     }
+
+    public void approve(Supervisor supervisor) {
+        if (status != VacationStatus.PENDING) {
+            throw new IllegalStateException("Only pending requests can be approved (status " + status + ")");
+        }
+        status = VacationStatus.APPROVED;
+        approver = supervisor;
+    }
+
+    public void reject(Supervisor supervisor, String reason) {
+        if (status != VacationStatus.PENDING) {
+            throw new IllegalStateException("Only pending requests can be rejected (status " + status + ")");
+        }
+        status = VacationStatus.REJECTED;
+        approver = supervisor;
+        rejectionReason = reason;
+    }
+
+    public void cancel() {
+        if (status != VacationStatus.PENDING && status != VacationStatus.APPROVED) {
+            throw new IllegalStateException("Request is already " + status);
+        }
+        status = VacationStatus.CANCELLED;
+    }
+
+    public long getId() { return id; }
+    public LocalDate getStartDate() { return startDate; }
+    public LocalDate getEndDate() { return endDate; }
+    public VacationStatus getStatus() { return status; }
+    public String getRejectionReason() { return rejectionReason; }
+    public Employee getEmployee() { return employee; }
+    public Supervisor getApprover() { return approver; }
 }
