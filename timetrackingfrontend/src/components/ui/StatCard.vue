@@ -4,6 +4,7 @@ defineProps({
   value: { type: String, required: true },
   subtitle: { type: String, default: '' },
   highlighted: { type: Boolean, default: false },
+  icon: { type: String, default: '' },
 })
 </script>
 
@@ -22,11 +23,8 @@ defineProps({
       >
         {{ title }}
       </div>
-      <div class="icon-box">
-        <div
-          class="icon-shape"
-          :style="{ outline: highlighted ? '1.70px #B3D6D5 solid' : '1.70px #697B80 solid' }"
-        ></div>
+      <div class="icon-box" :style="{ color: highlighted ? '#B3D6D5' : '#697B80' }">
+        {{ icon }}
       </div>
     </div>
     <div
@@ -45,6 +43,10 @@ defineProps({
 </template>
 
 <style scoped>
+@font-face {
+  font-family: 'Symbols Nerd Font';
+  src: url('../../assets/fonts/SymbolsNerdFont-Regular.ttf') format('truetype');
+}
 .stat-card {
   flex: 1 1 0;
   padding: 20px;
@@ -96,4 +98,15 @@ defineProps({
   font-weight: 400;
   line-height: 15.95px;
 }
+.icon-box {
+  width: 17px;
+  height: 17px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Symbols Nerd Font', 'Symbols Nerd Font Mono', monospace;
+  font-size: 16px;
+  line-height: 1;
+}
+
 </style>
