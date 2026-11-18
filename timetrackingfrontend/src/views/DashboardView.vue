@@ -24,6 +24,11 @@ const formatMinutes = (mins) => {
 }
 
 const emit = defineEmits(['navigate'])
+const icons = {
+  time: '\uf017',  // clock
+  flex: '\uf0ec',  // exchange
+  sick: '\uf0f1',  // stethoscope
+}
 const workingTime = ref("Laden...")
 const flexBalance = ref("Laden...")
 const sickLeave = ref("Laden...")
@@ -133,11 +138,11 @@ onMounted(() => {
     </div>
 
 
-    <div class="kpi-grid">
-      <StatCard title="Working time " :value="workingTime"/>
-      <StatCard title="Flex balance" :value="flexBalance"  />
-      <StatCard title="Sickleave " :value="sickLeave" />
-    </div>
+<div class="kpi-grid">
+  <StatCard title="Working time" :value="workingTime" :icon="icons.time" />
+  <StatCard title="Flex balance" :value="flexBalance" :icon="icons.flex" />
+  <StatCard title="Sickleave" :value="sickLeave" :icon="icons.sick" />
+</div>
 
     <div class="middle-row">
       <div class="chart-box vacation-box">

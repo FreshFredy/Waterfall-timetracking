@@ -32,10 +32,10 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
           :style="{ background: activeRoute === 'dashboard' ? '#E8F3F2' : 'transparent' }"
         >
           <div class="nav-icon-box">
-            <div
-              class="nav-icon-shape"
-              :style="{ outline: activeRoute === 'dashboard' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
-            ></div>
+          <span
+            class="nav-icon-glyph"
+            :style="{ color: activeRoute === 'dashboard' ? '#176A70' : '#697B80' }"
+          >󰕮</span>
           </div>
           <div
             class="nav-text"
@@ -51,16 +51,16 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
           :style="{ background: activeRoute === 'timetracking' ? '#E8F3F2' : 'transparent' }"
         >
           <div class="nav-icon-box">
-            <div
-              class="nav-icon-shape"
-              :style="{ outline: activeRoute === 'timetracking' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
-            ></div>
+          <span
+            class="nav-icon-glyph"
+            :style="{ color: activeRoute === 'timetracking' ? '#176A70' : '#697B80' }"
+          >&#xf073;</span>
           </div>
           <div
             class="nav-text"
             :style="{ color: activeRoute === 'timetracking' ? '#176A70' : '#697B80', fontWeight: activeRoute === 'timetracking' ? '600' : '500' }"
           >
-            Timesheet
+            Timesheet 
           </div>
         </button>
 
@@ -71,10 +71,10 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
           :style="{ background: activeRoute === 'vacation' ? '#E8F3F2' : 'transparent' }"
         >
           <div class="nav-icon-box">
-            <div
-              class="nav-icon-shape"
-              :style="{ outline: activeRoute === 'vacation' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
-            ></div>
+          <span
+            class="nav-icon-glyph"
+            :style="{ color: activeRoute === 'vacation' ? '#176A70' : '#697B80' }"
+          >&#xF054A;</span>
           </div>
           <div
             class="nav-text"
@@ -92,10 +92,10 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
             :style="{ background: activeRoute === 'monthly-review' ? '#E8F3F2' : 'transparent' }"
           >
             <div class="nav-icon-box">
-              <div
-                class="nav-icon-shape"
-                :style="{ outline: activeRoute === 'monthly-review' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
-              ></div>
+          <span
+            class="nav-icon-glyph"
+            :style="{ color: activeRoute === 'monthly-review' ? '#176A70' : '#697B80' }"
+          ></span>
             </div>
             <div
               class="nav-text"
@@ -114,10 +114,10 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
             :style="{ background: activeRoute === 'sickleave' ? '#E8F3F2' : 'transparent' }"
           >
             <div class="nav-icon-box">
-              <div
-                class="nav-icon-shape"
-                :style="{ outline: activeRoute === 'sickleave' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
-              ></div>
+          <span
+            class="nav-icon-glyph"
+            :style="{ color: activeRoute === 'sickleave' ? '#176A70' : '#697B80' }"
+          ></span>
             </div>
             <div
               class="nav-text"
@@ -150,6 +150,12 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
 </template>
 
 <style scoped>
+
+@font-face {
+  font-family: 'Symbols Nerd Font';
+  src: url('../../assets/fonts/SymbolsNerdFont-Regular.ttf') format('truetype');
+}
+
 .sidebar {
   width: 280px;
   background: #FFFFFF;
@@ -213,6 +219,16 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
   margin-top: 12px;
   margin-bottom: 4px;
   letter-spacing: 0.5px;
+}
+.nav-icon-glyph {
+  font-family: 'Symbols Nerd Font', 'Symbols Nerd Font Mono', 'JetBrainsMono Nerd Font', monospace;
+  font-size: 16px;
+  line-height: 18px;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .nav-item {
