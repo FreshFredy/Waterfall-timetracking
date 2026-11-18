@@ -1,19 +1,51 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
+import { sickLeaveService } from "../services/api.js";
+import EmployeeService from '../services/api.js'
+
+const props = defineProps({
+  employeeId: { type: Number },
+  user: {
+    type: Object,
+    default: () => ({ email: '' }),
+  },
+})
+
+const resolveEmployeeId = async () => {
+  if (props.employeeId) {
+    return props.employeeId
+  }
+
+  if (props.user && props.user.email) {
+    console.log("Versuche ID für E-Mail aufzulösen:", props.user.email)
+    const employeesResponse = await EmployeeService.getAll(props.user.email)
+    console.log("Antwort von EmployeeService.getAll:", employeesResponse)
+    
+    if (employeesResponse.data && employeesResponse.data.length > 0) {
+      return employeesResponse.data[0].id
+    }
+  }
+
+  throw new Error("Konnte keine Employee-ID ermitteln: Weder props.employeeId noch eine gültige E-Mail / Employee-Daten vorhanden.")
+}
 
 const form = ref({
   employeeId: '',
   startDate: '',
   endDate: '',
+  excused: 'EXCUSED',
   fileName: ''
 })
 
-// Such-State
+// Such- & Zeitraum-State für die Abfrage unten
 const searchEmployeeId = ref('')
 const searchedEmployee = ref('')
+const searchStartDate = ref('')
+const searchEndDate = ref('')
 
-const employeeSickLeaveCounts = ref({})
+// Speichert die geladenen Krankmeldungen des Mitarbeiters vom Backend
+const employeeSickLeaves = ref([])
 
 // Helper to parse YYYY-MM-DD in local time
 const parseLocalDate = (dateStr) => {
@@ -28,7 +60,6 @@ const previewDays = computed(() => {
   if (!start || !end || isNaN(start) || isNaN(end) || end < start) return []
 
   const days = []
-  // Wir klonen das Startdatum, um Mutation-Fehler zu vermeiden
   let curr = new Date(start.getFullYear(), start.getMonth(), start.getDate())
   const lastDay = new Date(end.getFullYear(), end.getMonth(), end.getDate())
 
@@ -36,7 +67,7 @@ const previewDays = computed(() => {
     const dayOfWeek = curr.getDay()
     // Nur Wochentage (Mo-Fr) einbeziehen (0 = Sonntag, 6 = Samstag)
     if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      days.push(new Date(curr)) // Neuer Instanz-Klon für den Tag
+      days.push(new Date(curr))
     }
     curr.setDate(curr.getDate() + 1)
   }
@@ -56,21 +87,82 @@ const previewRangeLabel = computed(() => {
     : `${fmt(start)} – ${fmt(end)}`
 })
 
+// Dynamische Berechnung der Krankheitstage basierend auf den einzelnen `day`-Eintragen und dem Filter
 const searchedSickDaysCount = computed(() => {
-  if (!searchedEmployee.value) return 0
-  return employeeSickLeaveCounts.value[searchedEmployee.value] || 0
+  if (!employeeSickLeaves.value.length) return 0
+
+  const filterStart = parseLocalDate(searchStartDate.value)
+  const filterEnd = parseLocalDate(searchEndDate.value)
+
+  return employeeSickLeaves.value.filter(leave => {
+    const sickDay = parseLocalDate(leave.day)
+    if (!sickDay) return false
+
+    const afterStart = !filterStart || sickDay >= filterStart
+    const beforeEnd = !filterEnd || sickDay <= filterEnd
+    return afterStart && beforeEnd
+  }).length
 })
 
 const handleCancel = () => {
-  form.value = { employeeId: '', startDate: '', endDate: '', fileName: '' }
+  form.value = { employeeId: '', startDate: '', endDate: '', excused: 'EXCUSED', fileName: '' }
 }
 
-const handleSubmit = () => {
-  console.log('Submitting:', form.value)
+// Krankmeldung absenden: Da das Backend einzelne Tage erwartet, senden wir für jeden Werktag einen Request
+const handleSubmit = async () => {
+  try {
+    let hrId
+    try {
+      hrId = await resolveEmployeeId()
+    } catch (error) {
+    console.error(error)
+    alert("Fehler: Konnte keine HR-ID des angemeldeten Benutzers ermitteln.")
+  return
+  }
+
+    if (!form.value.employeeId || previewDays.value.length === 0) {
+      alert("Bitte Employee ID und einen gültigen Zeitraum angeben.")
+      return
+    }
+
+    // Für jeden Werktag in der Vorschau einen API-Call ausführen
+    for (const day of previewDays.value) {
+      // Datum im Format YYYY-MM-DD formatieren
+      const year = day.getFullYear()
+      const month = String(day.getMonth() + 1).padStart(2, '0')
+      const d = String(day.getDate()).padStart(2, '0')
+      const formattedDate = `${year}-${month}-${d}`
+
+      const payload = {
+        employeeId: Number(form.value.employeeId),
+        day: formattedDate,
+        excused: form.value.excused, // z.B. EXCUSED oder DOCTORS_NOTE_MISSING
+        doctorsNotePath: form.value.fileName || null
+      }
+
+      await sickLeaveService.recordSickLeave(hrId, payload)
+    }
+
+    handleCancel()
+  } catch (error) {
+    console.error("Fehler beim Speichern der Krankmeldung:", error)
+    alert("Fehler beim Speichern der Krankmeldung.")
+  }
 }
 
-const handleSearch = () => {
-  searchedEmployee.value = searchEmployeeId.value.trim()
+// Ruft alle Krankmeldungen des Mitarbeiters ab
+const handleSearch = async () => {
+  const id = searchEmployeeId.value.trim()
+  if (!id) return
+
+  searchedEmployee.value = id
+  try {
+    const response = await sickLeaveService.getByEmployee(id)
+    employeeSickLeaves.value = Array.isArray(response.data) ? response.data : []
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Krankmeldungen:", error)
+    employeeSickLeaves.value = []
+  }
 }
 </script>
 
@@ -98,6 +190,7 @@ const handleSearch = () => {
             type="text"
             class="text-input"
             placeholder="Employee ID eingeben..."
+            required
           />
         </label>
 
@@ -109,6 +202,7 @@ const handleSearch = () => {
               v-model="form.startDate"
               type="date"
               class="text-input"
+              required
             />
           </label>
 
@@ -118,12 +212,13 @@ const handleSearch = () => {
               v-model="form.endDate"
               type="date"
               class="text-input"
+              required
             />
           </label>
         </div>
 
         <p class="note-txt">
-          Start und Enddatum sind inkludiert
+          Start und Enddatum sind inkludiert (Wochenenden werden automatisch übersprungen)
         </p>
 
         <div class="divider-line"></div>
@@ -169,32 +264,54 @@ const handleSearch = () => {
       </div>
     </div> <!-- /.sl-split -->
 
-    <!-- Bottom Card: Simplified Search & Count -->
+    <!-- Bottom Card: Simplified Search & Count mit Zeitraum-Auswahl -->
     <div class="history-table-card">
       <div class="hist-table-header">
         <div>
           <h3 class="box-title">Krankheitstage abfragen</h3>
-          <p class="box-subtitle">Employee ID eingeben, um die Gesamtzahl der Krankheitstage zu sehen</p>
+          <p class="box-subtitle">Employee ID und optionalen Zeitraum eingeben</p>
         </div>
       </div>
 
       <div class="search-section">
-        <form class="search-bar-row" @submit.prevent="handleSearch">
-          <label class="input-label flex-1">
+        <form class="search-bar-row" @submit.prevent="handleSearch" style="max-width: none; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
+          <label class="input-label" style="flex: 1; min-width: 150px;">
             Employee ID
             <input
               v-model="searchEmployeeId"
               type="text"
               class="text-input"
               placeholder="Employee ID eingeben..."
+              required
             />
           </label>
+
+          <!-- Zeitraum Von -->
+          <label class="input-label" style="flex: 1; min-width: 150px;">
+            Von (optional)
+            <input
+              v-model="searchStartDate"
+              type="date"
+              class="text-input"
+            />
+          </label>
+
+          <!-- Zeitraum Bis -->
+          <label class="input-label" style="flex: 1; min-width: 150px;">
+            Bis (optional)
+            <input
+              v-model="searchEndDate"
+              type="date"
+              class="text-input"
+            />
+          </label>
+
           <button type="submit" class="submit-btn search-btn">
             Anzeigen
           </button>
         </form>
 
-        <!-- Reines Zähler-Ergebnis -->
+        <!-- Zähler-Ergebnis -->
         <div v-if="searchedEmployee" class="result-display-box">
           <div class="preview-kpi-box light" style="max-width: 320px; margin-top: 20px;">
             <span class="pkpi-lbl">Gesamte Krankheitstage (ID: {{ searchedEmployee }})</span>
@@ -222,7 +339,6 @@ const handleSearch = () => {
 .flex-1 { flex: 1; min-width: 0; }
 .time-inputs-row { display: flex; gap: 12px; }
 
-/* Eingabefelder: Weiß mit schwarzer Schrift */
 .text-input { 
   width: 100%; 
   box-sizing: border-box; 
@@ -260,10 +376,8 @@ const handleSearch = () => {
 .preview-table-row { height: 40px; padding: 0 24px; background: #F9F7FC; border-bottom: 1px #DFE7E8 solid; display: flex; align-items: center; font-size: 12px; }
 .ptr-date { flex: 1; color: #172D32; }
 
-/* History & Search Card */
 .history-table-card { background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; overflow: hidden; }
 .hist-table-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
 .search-section { padding: 0 24px 24px 24px; }
-.search-bar-row { display: flex; gap: 12px; align-items: flex-end; max-width: 432px; }
 .search-btn { height: 43px; }
 </style>

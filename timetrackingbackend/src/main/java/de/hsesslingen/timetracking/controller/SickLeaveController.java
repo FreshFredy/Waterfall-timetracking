@@ -1,5 +1,7 @@
 package de.hsesslingen.timetracking.controller;
 
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -30,6 +32,13 @@ public class SickLeaveController {
     public ResponseEntity<SickLeaveResponseDTO> getSickLeave(@PathVariable("id") long id) {
         return ResponseEntity.ok(sickLeaveService.getSickLeave(id));
     }
+
+    @GetMapping("/SickLeaves/employee/{employeeId}")
+    public ResponseEntity<List<SickLeaveResponseDTO>> getSickLeavesByEmployee(@PathVariable("employeeId") long employeeId) {
+        return ResponseEntity.ok(sickLeaveService.getSickLeavesByEmployee(employeeId));
+    }
+
+
 
     @PostMapping("/SickLeaves")
     public ResponseEntity<SickLeaveResponseDTO> recordSickLeave(

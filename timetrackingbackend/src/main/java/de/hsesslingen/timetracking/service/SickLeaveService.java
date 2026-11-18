@@ -8,7 +8,7 @@ import de.hsesslingen.timetracking.dto.SickLeaveDTO;
 import de.hsesslingen.timetracking.dto.SickLeaveResponseDTO;
 import de.hsesslingen.timetracking.mapper.SickLeaveMapper;
 import org.springframework.stereotype.Service;
-
+import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.springframework.transaction.annotation.Transactional;;;
@@ -42,6 +42,13 @@ public SickLeaveResponseDTO getSickLeave(long id) {
     return sickLeaveRepository.findById(id)
             .map(sickLeaveMapper::toDTO)
             .orElseThrow(() -> new NoSuchElementException("Sick leave " + id + " not found"));
+}
+
+@Transactional(readOnly = true)
+public List<SickLeaveResponseDTO> getSickLeavesByEmployee(long employeeId) {
+    return sickLeaveRepository.findByEmployeeId(employeeId).stream()
+            .map(sickLeaveMapper::toDTO)
+            .toList();
 }
 
 public SickLeaveResponseDTO recordSickLeave(long hrId, SickLeaveDTO dto) {

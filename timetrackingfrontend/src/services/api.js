@@ -80,5 +80,27 @@ class TimesheetDataService {
     }
 }
 
+
+class SickLeaveDataService {
+    
+    
+    get(id) {
+        return http.get(`/SickLeave-management/SickLeaves/${id}`);
+    }
+
+    // Angepasst an deinen Backend-Pfad mit /employee/{employeeId}
+    getByEmployee(employeeId) {
+        return http.get(`/SickLeave-management/SickLeaves/employee/${employeeId}`);
+    }
+
+    recordSickLeave(hrId, data) {
+        return http.post(`/SickLeave-management/SickLeaves?hrId=${hrId}`, data);
+    }
+}
+
+
+
+
+export const sickLeaveService = new SickLeaveDataService();
 export const timesheetService = new TimesheetDataService();
 export default new EmployeeDataService();
