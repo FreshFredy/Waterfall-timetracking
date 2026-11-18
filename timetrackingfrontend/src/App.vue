@@ -127,7 +127,8 @@ const handleOpenHelp = () => {
         />
         <TimeTrackingView 
           v-else-if="activeRoute === 'timetracking'"
-          :user="currentUser" 
+          :user="currentUser"
+          :active-route="activeRoute" 
         />
         <VacationView 
           v-else-if="activeRoute === 'vacation'"
@@ -136,11 +137,13 @@ const handleOpenHelp = () => {
         />
         <SickleaveView 
           v-else-if="activeRoute === 'sickleave' && currentUser.role === 'hr'"
-          :user="currentUser" 
+          :user="currentUser"
+          :active-route="activeRoute" 
         />
         <MonthlyReviewView 
           v-else-if="activeRoute === 'monthly-review' && currentUser.role === 'supervisor'"
-          :user="currentUser" 
+          :user="currentUser"
+          :active-route="activeRoute" 
         />
       </main>
 

@@ -21,6 +21,13 @@ const plannedVacationDays = ref("Laden...")
 const remainingVacationDays = ref(0)
 const vacationEntries = ref([])
 
+// Berechnet das morgige Datum als String im Format YYYY-MM-DD für das min-Attribut im Input
+const minDate = computed(() => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0];
+})
+
 // Hilfsfunktion zur Berechnung von Arbeitstagen (Mo-Fr) zwischen zwei Datumsstrings
 const calculateWorkDays = (startStr, endStr) => {
   if (!startStr || !endStr) return 0
@@ -38,6 +45,17 @@ const calculateWorkDays = (startStr, endStr) => {
     current.setDate(current.getDate() + 1)
   }
   return workDays
+}
+
+// JavaScript-gerechte Prüfung, ob ein Startdatum in der Vergangenheit liegt oder heute ist
+const isAlreadyStartedOrToday = (startDateStr) => {
+  if (!startDateStr) return false;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startDate = new Date(startDateStr);
+  startDate.setHours(0, 0, 0, 0);
+  
+  return startDate <= today;
 }
 
 // 1. Urlaubsbilanz vom Backend abrufen
@@ -130,12 +148,20 @@ const fetchVacationRequests = async () => {
 
             const daysCount = req.daysCount || calculateWorkDays(req.startDate, req.endDate);
 
+            const isApproved = rawStatus === 'APPROVED' || rawStatus === 'GENEHMIGT';
+            const hasStarted = isAlreadyStartedOrToday(req.startDate);
+            const isCancelledOrRejected = rawStatus === 'CANCELLED' || rawStatus === 'STORNIERT' || rawStatus === 'REJECTED' || rawStatus === 'ABGELEHNT';
+            
+            const canBeCancelled = !isCancelledOrRejected && !(isApproved && hasStarted);
+
             return {
                 id: req.id,
                 period: periodStr,
                 days: daysCount,
                 status: displayStatus,
+                rawStatus: rawStatus,
                 variant: variant,
+                canBeCancelled: canBeCancelled
             };
         });
 
@@ -143,6 +169,29 @@ const fetchVacationRequests = async () => {
         console.error("Fehler beim Laden der Urlaubsanträge:", error);
     }
 };
+
+// 3. Urlaubsantrag abbrechen
+const handleCancelRequest = async (requestId) => {
+
+  let currentId = props.employeeId;
+
+  if ((!currentId || currentId === 1) && props.user && props.user.email) {
+    const employeesResponse = await EmployeeService.getAll(props.user.email);
+    if (employeesResponse.data && employeesResponse.data.length > 0) {
+      currentId = employeesResponse.data[0].id;
+    }
+  }
+
+  try {
+    await vacationRequestService.cancel(requestId, currentId);
+
+    await fetchVacationData();
+    await fetchVacationRequests();
+  } catch (error) {
+    console.error("Fehler beim Abbrechen des Urlaubsantrags:", error);
+    alert('error');
+  }
+}
 
 // Reagiert auf Routenwechsel oder Daten-Updates und lädt alle Daten neu
 watch(
@@ -179,8 +228,21 @@ const vacationStats = computed(() => {
   }
 })
 
-// Urlaub beantragen und ans Backend senden
+// Urlaub beantragen und ans Backend senden (Prüfung: weder Vergangenheit noch heute)
 const handleAddVacation = async () => {
+  if (!form.value.startDate) return;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const startDateObj = new Date(form.value.startDate);
+  startDateObj.setHours(0, 0, 0, 0);
+
+  // Prüfung: Startdatum muss strikt in der Zukunft liegen (weder Vergangenheit noch heute)
+  if (startDateObj <= today) {
+    alert('Urlaub kann erst ab dem nächsten Tag beantragt werden (heute und vergangene Tage sind nicht erlaubt).');
+    return;
+  }
+
   if (vacationStats.value.days <= 0) {
     alert('Bitte ein gültiges Start- und Enddatum (mindestens 1 Arbeitstag) wählen.')
     return
@@ -208,11 +270,9 @@ const handleAddVacation = async () => {
   try {
     await vacationRequestService.create(currentId, requestPayload);
 
-    // Formular zurücksetzen
     form.value.startDate = ''
     form.value.endDate = ''
     
-    // Daten und Antragsliste direkt neu vom Backend laden
     await fetchVacationData();
     await fetchVacationRequests();
 
@@ -257,11 +317,12 @@ const handleAddVacation = async () => {
               <th class="th-date">Zeitraum</th>
               <th class="th-days">Tage</th>
               <th class="th-status">Status</th>
+              <th class="th-action">Aktion</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="vacationEntries.length === 0">
-              <td colspan="3" class="empty-state">
+              <td colspan="4" class="empty-state">
                 Noch keine Urlaubsanträge vorhanden.
               </td>
             </tr>
@@ -270,6 +331,16 @@ const handleAddVacation = async () => {
               <td class="td-net-val">{{ entry.days }} {{ entry.days === 1 ? 'Tag' : 'Tage' }}</td>
               <td>
                 <StatusBadge :variant="entry.variant" :label="entry.status" />
+              </td>
+              <td>
+                <button 
+                  v-if="entry.canBeCancelled"
+                  @click="handleCancelRequest(entry.id)" 
+                  class="cancel-btn"
+                  title="Antrag abbrechen"
+                >
+                  Abbrechen
+                </button>
               </td>
             </tr>
           </tbody>
@@ -280,17 +351,16 @@ const handleAddVacation = async () => {
         <form @submit.prevent="handleAddVacation" class="form-card">
           <div class="form-card-header">
             <h2 class="box-title">Urlaub beantragen</h2>
-            <StatusBadge variant="neutral" label="Neu" />
           </div>
 
           <div class="time-inputs-row">
             <label class="input-label flex-1">
               Von
-              <input v-model="form.startDate" type="date" class="text-input" required />
+              <input v-model="form.startDate" type="date" :min="minDate" class="text-input" required />
             </label>
             <label class="input-label flex-1">
               Bis
-              <input v-model="form.endDate" type="date" class="text-input" required />
+              <input v-model="form.endDate" type="date" :min="form.startDate || minDate" class="text-input" required />
             </label>
           </div>
 
@@ -351,6 +421,7 @@ const handleAddVacation = async () => {
 .th-date { padding-left: 20px; width: 200px; }
 .th-days { width: 100px; }
 .th-status { width: 120px; }
+.th-action { width: 100px; }
 
 .empty-state {
   padding: 32px 20px;
@@ -363,6 +434,20 @@ const handleAddVacation = async () => {
 .data-tr:last-child { border-bottom: none; }
 .td-date { padding-left: 20px; }
 .td-net-val { font-weight: 600; }
+
+.cancel-btn {
+  padding: 4px 10px;
+  background: #FFF1F2;
+  color: #E11D48;
+  border: 1px solid #FECDD3;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.cancel-btn:hover {
+  background: #FFE4E6;
+}
 
 .right-sidebar { width: 432px; flex-shrink: 0; display: flex; flex-direction: column; gap: 20px; }
 .form-card {
