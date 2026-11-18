@@ -8,11 +8,14 @@ import VacationView from './views/VacationView.vue'
 import MonthlyReviewView from './views/MonthlyReviewView.vue'
 import AppHeader from './components/layout/AppHeader.vue'
 import AppFooter from './components/layout/AppFooter.vue'
-import AppSidebar from './components/layout/AppSidebar.vue' 
+import AppSidebar from './components/layout/AppSidebar.vue'
+import NotificationSidebar from './components/layout/NotificationSidebar.vue'
+import employeeDataService, { notificationService } from './services/api' // employeeService importieren
 
 // Authentifizierungs-Zustand
 const isAuthenticated = ref(false)
 const currentUser = ref({
+  id: null, 
   name: '',
   email: '',
   role: 'employee',
@@ -24,20 +27,79 @@ const currentUser = ref({
 const activeRoute = ref('timetracking')
 const pendingReviewsCount = ref(3)
 
-// Login-Handler: Empfängt die Daten vom Backend (AuthController)
-const handleLogin = (userData) => {
+// Benachrichtigungs-Zustand
+const isNotificationsOpen = ref(false)
+const notifications = ref([])
+
+const unreadNotificationsCount = computed(() => {
+  return notifications.value.filter(n => !n.read).length
+})
+
+// Benachrichtigungen vom Backend laden
+const loadNotifications = async (employeeId) => {
+  try {
+    const response = await notificationService.getNotifications(employeeId, false)
+    notifications.value = response.data
+  } catch (error) {
+    console.error("Fehler beim Laden der Benachrichtigungen:", error)
+  }
+}
+
+// Einzelne Benachrichtigung als gelesen markieren
+const handleMarkAsRead = async (notificationId) => {
+  try {
+    await notificationService.markAsRead(notificationId, currentUser.value.id)
+    const item = notifications.value.find(n => n.id === notificationId)
+    if (item) item.read = true
+  } catch (error) {
+    console.error("Fehler beim Aktualisieren der Benachrichtigung:", error)
+  }
+}
+
+// Alle als gelesen markieren
+const handleMarkAllAsRead = async () => {
+  try {
+    await notificationService.markAllAsRead(currentUser.value.id)
+    notifications.value.forEach(n => { n.read = true })
+  } catch (error) {
+    console.error("Fehler beim Markieren aller Benachrichtigungen:", error)
+  }
+}
+
+// Login-Handler (ID über E-Mail ermitteln)
+const handleLogin = async (userData) => {
+  console.log("Empfangene Login-Daten vom Backend:", userData)
+
   const role = userData.role ? userData.role.toLowerCase() : 'employee'
   const fullName = userData.name || 'User'
-  
-  // Initialen aus dem Namen generieren (z.B. "Markus Müller" -> "MM")
+  const email = userData.email
+
   const nameParts = fullName.split(' ')
   const initials = nameParts.length >= 2 
     ? `${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase() 
     : fullName.substring(0, 2).toUpperCase()
 
+  let employeeId = null
+
+  try {
+    // ID über die E-Mail-Adresse vom Employee-Endpoint abfragen
+    // (Deine api.js hat: getAll(email = null) -> filtert per ?email=...)
+    const response = await employeeDataService.getAll(email)
+    
+    // Je nachdem, ob das Backend eine Liste oder ein einzelnes Objekt zurückgibt:
+    const employeeData = Array.isArray(response.data) ? response.data[0] : response.data
+    
+    if (employeeData && (employeeData.id !== undefined || employeeData.employeeId !== undefined)) {
+      employeeId = employeeData.id !== undefined ? employeeData.id : employeeData.employeeId
+    }
+  } catch (error) {
+    console.error("Fehler beim Abrufen der Mitarbeiter-ID über die E-Mail:", error)
+  }
+
   currentUser.value = {
+    id: employeeId,
     name: fullName,
-    email: userData.email,
+    email: email,
     role: role,
     initials: initials,
     title: role.toUpperCase()
@@ -45,7 +107,13 @@ const handleLogin = (userData) => {
   
   isAuthenticated.value = true
 
-  // Rollenbasiertes Routing direkt nach dem Login
+  if (!employeeId) {
+    console.error("FEHLER: Es konnte keine Mitarbeiter-ID zur E-Mail ermittelt werden!")
+  } else {
+    // Benachrichtigungen gezielt für diesen User laden
+    await loadNotifications(employeeId)
+  }
+
   if (role === 'supervisor') {
     activeRoute.value = 'monthly-review'
   } else if (role === 'hr') {
@@ -55,7 +123,6 @@ const handleLogin = (userData) => {
   }
 }
 
-// Navigation aus Unterkomponenten abfangen
 const handleNavigate = (targetRoute) => {
   if (targetRoute === 'time-tracking') {
     activeRoute.value = 'timetracking'
@@ -64,7 +131,6 @@ const handleNavigate = (targetRoute) => {
   }
 }
 
-// Dynamische Breadcrumbs für den AppHeader
 const headerMeta = computed(() => {
   switch (activeRoute.value) {
     case 'dashboard':
@@ -82,26 +148,20 @@ const headerMeta = computed(() => {
   }
 })
 
-// Abmelden
 const handleLogout = () => {
   isAuthenticated.value = false
-  currentUser.value = { name: '', email: '', role: 'employee', initials: 'MM', title: 'Employee' }
+  isNotificationsOpen.value = false
+  notifications.value = []
+  currentUser.value = { id: null, name: '', email: '', role: 'employee', initials: 'MM', title: 'Employee' }
   activeRoute.value = 'timetracking'
 }
 
-const handleOpenHelp = () => {
-  alert('Hilfe-Center wird geöffnet...')
-}
 </script>
 
 <template>
-  <!-- 1. Nicht eingeloggt: Zeige den Login-Screen -->
   <LoginView v-if="!isAuthenticated" @login="handleLogin" />
 
-  <!-- 2. Eingeloggt: Zeige das Layout mit der Sidebar, Header, Content & Footer -->
   <div v-else class="app-layout">
-    
-    <!-- Deine Sidebar-Komponente mit Props & Events -->
     <AppSidebar
       :active-route="activeRoute"
       :role="currentUser.role"
@@ -112,11 +172,12 @@ const handleOpenHelp = () => {
       @logout="handleLogout"
     />
 
-    <!-- Hauptbereich rechts neben der Sidebar -->
     <div class="main-wrapper">
       <AppHeader 
         :section="headerMeta.section" 
         :page="headerMeta.page" 
+        :unread-count="unreadNotificationsCount"
+        @toggle-notifications="isNotificationsOpen = !isNotificationsOpen"
       />
 
       <main class="content-body">
@@ -149,11 +210,19 @@ const handleOpenHelp = () => {
 
       <AppFooter />
     </div>
+
+    <!-- Benachrichtigungs-Sidebar -->
+    <NotificationSidebar
+      :is-open="isNotificationsOpen"
+      :notifications="notifications"
+      @close="isNotificationsOpen = false"
+      @mark-as-read="handleMarkAsRead"
+      @mark-all-read="handleMarkAllAsRead"
+    />
   </div>
 </template>
 
 <style>
-/* Globale Styles / Reset */
 * {
   box-sizing: border-box;
   margin: 0;

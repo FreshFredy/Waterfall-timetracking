@@ -1,9 +1,14 @@
 <script setup>
 import { computed } from 'vue'
+
 defineProps({
   section: { type: String, required: true },
   page: { type: String, required: true },
+  unreadCount: { type: Number, default: 0 }
 })
+
+const emit = defineEmits(['toggle-notifications'])
+
 const currentDate = computed(() => {
   return new Date().toLocaleDateString('de-DE', {
     weekday: 'short',
@@ -24,7 +29,14 @@ const currentDate = computed(() => {
     <div class="header-right">
       <div class="date-text">{{ currentDate }}</div>
       <div class="divider"></div>
-      <div class="icon-placeholder">🔔</div>
+      <button 
+        type="button" 
+        class="notification-btn" 
+        aria-label="Benachrichtigungen öffnen"
+        @click="emit('toggle-notifications')"
+      >
+        <span class="bell-icon">🔔</span>
+      </button>
     </div>
   </header>
 </template>
@@ -84,9 +96,39 @@ const currentDate = computed(() => {
   height: 20px;
   background: #DFE7E8;
 }
-.icon-placeholder {
+.notification-btn {
+  position: relative;
+  background: transparent;
+  border: none;
   cursor: pointer;
-  color: #697B80;
-  font-size: 14px;
+  padding: 6px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+.notification-btn:hover {
+  background-color: #F4F6F6;
+}
+.bell-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+.badge {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  background-color: #E04F5F;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  min-width: 15px;
+  height: 15px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
 }
 </style>

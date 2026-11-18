@@ -83,7 +83,6 @@ class TimesheetDataService {
 
 class SickLeaveDataService {
     
-    
     get(id) {
         return http.get(`/SickLeave-management/SickLeaves/${id}`);
     }
@@ -136,8 +135,32 @@ class VacationRequestDataService {
     }
 }
 
+class NotificationDataService {
+
+    // Entspricht: @GetMapping("/Notifications") mit employeeId und optionalem unreadOnly
+    getNotifications(employeeId, unreadOnly = false) {
+        return http.get(`/Notification-management/Notifications?employeeId=${employeeId}&unreadOnly=${unreadOnly}`);
+    }
+
+    // Entspricht: @GetMapping("/Notifications/unread-count")
+    countUnread(employeeId) {
+        return http.get(`/Notification-management/Notifications/unread-count?employeeId=${employeeId}`);
+    }
+
+    // Entspricht: @PostMapping("/Notifications/{id}/read")
+    markAsRead(id, employeeId) {
+        return http.post(`/Notification-management/Notifications/${id}/read?employeeId=${employeeId}`);
+    }
+
+    // Entspricht: @PostMapping("/Notification-management/Notifications/read-all")
+    markAllAsRead(employeeId) {
+        return http.post(`/Notification-management/Notifications/read-all?employeeId=${employeeId}`);
+    }
+}
 
 
+
+export const notificationService = new NotificationDataService();
 export const vacationRequestService = new VacationRequestDataService();
 export const sickLeaveService = new SickLeaveDataService();
 export const timesheetService = new TimesheetDataService();
