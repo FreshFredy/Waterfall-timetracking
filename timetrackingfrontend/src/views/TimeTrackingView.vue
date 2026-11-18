@@ -35,8 +35,12 @@ const form = ref({
   start: '08:30',
   end: '17:00',
   breakMinutes: 30,
-  entryType: 'WORK', // Bleibt im Hintergrund auf WORK (oder anpassbar)
+  entryType: 'WORK',
 })
+
+// Editier-State
+const isEditing = ref(false)
+const editingEntryId = ref(null)
 
 // Navigation State für Monat und Jahr
 const selectedDate = ref(new Date())
@@ -45,7 +49,9 @@ const selectedDate = ref(new Date())
 const currentTimesheet = ref(null)
 const dailyEntries = ref([])
 const isLoading = ref(false)
+const isSubmitting = ref(false)
 const errorMessage = ref('')
+const successMessage = ref('')
 
 // Hilfsfunktion: Minuten in "H:MM" formatieren
 const formatMinutes = (mins) => {
@@ -79,15 +85,24 @@ const formattedPeriod = computed(() => {
   })
 })
 
-// 1. Timesheet und Einträge vom Backend laden (GET) über timesheetService
+// Prüfen, ob der aktuelle Timesheet eingereicht werden kann (z. B. wenn er existiert und Status 'Draft' / nicht eingereicht ist)
+const canSubmitTimesheet = computed(() => {
+  if (!currentTimesheet.value || !currentTimesheet.value.id) return false
+  const status = currentTimesheet.value.status ? currentTimesheet.value.status.toUpperCase() : 'DRAFT'
+  // Erlaubt das Einreichen, solange es ein Entwurf ist
+  return status === 'DRAFT' || status === 'OPEN' || status === 'ANGELEGT'
+})
+
+// 1. Timesheet und Einträge vom Backend laden (GET)
 const fetchTimesheetData = async () => {
   isLoading.value = true
   errorMessage.value = ''
+  successMessage.value = ''
   
   try {
     const resolvedId = await resolveEmployeeId()
     const year = selectedDate.value.getFullYear()
-    const month = selectedDate.value.getMonth() + 1 // JavaScript Monate sind 0-basiert (0 = Januar)
+    const month = selectedDate.value.getMonth() + 1
     
     const response = await timesheetService.getTimesheets(resolvedId, month, year)
     const data = response.data
@@ -111,6 +126,8 @@ const fetchTimesheetData = async () => {
 // Hilfsfunktion: Backend-DTO-Felder auf Tabellenzeile mappen
 const mapBackendEntryToRow = (entry) => {
   let formattedDate = entry.entryDate || '–'
+  let rawDateValue = entry.entryDate || new Date().toISOString().substr(0, 10)
+  
   if (entry.entryDate) {
     const d = new Date(entry.entryDate)
     if (!isNaN(d)) {
@@ -129,7 +146,6 @@ const mapBackendEntryToRow = (entry) => {
   const netHours = entry.creditedHours ?? 0
   const netMinsFormatted = formatMinutes(Math.round(netHours * 60))
 
-  // Backend-Typ abfangen (unterstützt entryType, entry_type und type)
   const rawType = entry.entryType ?? entry.entry_type ?? entry.type ?? 'WORK'
 
   const typeMapping = {
@@ -144,40 +160,95 @@ const mapBackendEntryToRow = (entry) => {
 
   return {
     id: entry.id,
+    rawDate: rawDateValue,
     date: formattedDate,
     start: startStr,
     end: endStr,
+    breakMinutes: breakMins,
     break: breakMins > 0 ? formatMinutes(breakMins) : '0:00',
     net: `${netMinsFormatted}`,
     type: displayType,
+    rawType: rawType
   }
 }
 
-// 2. Neuen Zeiteintrag ans Backend senden (POST) über timesheetService
-const handleAddEntry = async () => {
+// In den Bearbeitungsmodus wechseln
+const handleEditClick = (entry) => {
+  isEditing.value = true
+  editingEntryId.value = entry.id
+  
+  form.value = {
+    date: entry.rawDate,
+    start: entry.start !== '–' ? entry.start : '08:30',
+    end: entry.end !== '–' ? entry.end : '17:00',
+    breakMinutes: entry.breakMinutes,
+    entryType: entry.rawType || 'WORK'
+  }
+}
+
+// Bearbeitung abbrechen
+const cancelEdit = () => {
+  isEditing.value = false
+  editingEntryId.value = null
+  form.value = {
+    date: new Date().toISOString().substr(0, 10),
+    start: '08:30',
+    end: '17:00',
+    breakMinutes: 30,
+    entryType: 'WORK',
+  }
+}
+
+// 2. Neuen Zeiteintrag erstellen (POST) oder bestehenden aktualisieren (PUT)
+const handleFormSubmit = async () => {
   errorMessage.value = ''
+  successMessage.value = ''
   
   const payload = {
     entryDate: form.value.date,
-    startTime: `${form.value.start}:00`,    
-    endTime: `${form.value.end}:00`,        
+    startTime: form.value.start.length === 5 ? `${form.value.start}:00` : form.value.start,    
+    endTime: form.value.end.length === 5 ? `${form.value.end}:00` : form.value.end,        
     breakMinutes: form.value.breakMinutes,  
-    entryType: form.value.entryType // Sendet den Typ mit (Standard 'WORK')
+    entryType: form.value.entryType 
   }
 
   try {
     const resolvedId = await resolveEmployeeId()
-    const response = await timesheetService.recordWorkTime(resolvedId, payload)
-    const updatedTimesheet = response.data
-    currentTimesheet.value = updatedTimesheet
-    const rawEntries = updatedTimesheet.timeEntries || []
-    dailyEntries.value = rawEntries.map(mapBackendEntryToRow)
+
+    if (isEditing.value && editingEntryId.value) {
+      if (!currentTimesheet.value || !currentTimesheet.value.id) {
+        throw new Error("Keine Timesheet-ID vorhanden für das Update.")
+      }
+      await timesheetService.changeWorkTime(currentTimesheet.value.id, editingEntryId.value, payload)
+    } else {
+      await timesheetService.recordWorkTime(resolvedId, payload)
+    }
     
-    // Nach erfolgreichem Speichern Daten für den aktuellen Monat neu laden
+    cancelEdit()
     fetchTimesheetData()
   } catch (err) {
     console.error('Speicherfehler:', err)
-    errorMessage.value = 'Eintrag konnte nicht gespeichert werden.'
+    errorMessage.value = isEditing.value ? 'Eintrag konnte nicht aktualisiert werden.' : 'Eintrag konnte nicht gespeichert werden.'
+  }
+}
+
+// 3. Timesheet einreichen (Submit)
+const handleTimesheetSubmit = async () => {
+  if (!currentTimesheet.value || !currentTimesheet.value.id) return
+
+  isSubmitting.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await timesheetService.submit(currentTimesheet.value.id)
+    currentTimesheet.value = response.data
+    successMessage.value = 'Timesheet wurde erfolgreich eingereicht!'
+  } catch (err) {
+    console.error('Submit-Fehler:', err)
+    errorMessage.value = 'Timesheet konnte nicht eingereicht werden.'
+  } finally {
+    isSubmitting.value = false
   }
 }
 
@@ -197,12 +268,10 @@ const resetToToday = () => {
   selectedDate.value = new Date()
 }
 
-// Bei Änderung der Monats-/ Jahresnavigation automatisch Daten neu laden
 watch(selectedDate, () => {
   fetchTimesheetData()
 })
 
-// Beim Öffnen der Seite initial Daten laden
 onMounted(() => {
   fetchTimesheetData()
 })
@@ -213,13 +282,27 @@ onMounted(() => {
     <div class="tt-header-row">
       <h1 class="tt-title">Zeiterfassung</h1>
       <div class="tt-actions">
-        <!-- Submit Timesheet bleibt deaktiviert -->
-        <button class="disabled-submit-btn" disabled><span>Submit Timesheet</span></button>
+        <!-- Aktivierter Submit-Button -->
+        <button 
+          v-if="canSubmitTimesheet" 
+          @click="handleTimesheetSubmit" 
+          class="submit-timesheet-btn" 
+          :disabled="isSubmitting"
+        >
+          <span>{{ isSubmitting ? 'Wird eingereicht...' : 'Submit Timesheet' }}</span>
+        </button>
+        <button v-else class="disabled-submit-btn" disabled>
+          <span>Submit Timesheet</span>
+        </button>
       </div>
     </div>
 
     <div v-if="errorMessage" class="error-banner">
       {{ errorMessage }}
+    </div>
+
+    <div v-if="successMessage" class="success-banner">
+      {{ successMessage }}
     </div>
 
     <div class="content-split">
@@ -229,7 +312,6 @@ onMounted(() => {
             <h2 class="box-title">Timesheet</h2>
           </div>
 
-          <!-- Monats- & Jahresnavigation mit modernem Button-Styling -->
           <div class="date-navigation">
             <div class="nav-group">
               <button @click="changeYear(-1)" class="nav-btn" title="Vorheriges Jahr">«</button>
@@ -254,35 +336,47 @@ onMounted(() => {
               <th class="th-start">Start</th>
               <th class="th-end">Ende</th>
               <th class="th-break">Pause</th>
-              <th class="th-break">Typ</th>
+              <th class="th-type">Typ</th>
               <th class="th-net">Arbeitszeit</th>
+              <th class="th-action">Aktion</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="6" class="empty-state">Lade Zeiteinträge...</td>
+              <td colspan="7" class="empty-state">Lade Zeiteinträge...</td>
             </tr>
             <tr v-else-if="dailyEntries.length === 0">
-              <td colspan="6" class="empty-state">Keine Einträge für diesen Monat vorhanden.</td>
+              <td colspan="7" class="empty-state">Keine Einträge für diesen Monat vorhanden.</td>
             </tr>
-            <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr">
+            <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr" :class="{ 'editing-row': editingEntryId === entry.id }">
               <td class="td-date">{{ entry.date }}</td>
               <td>{{ entry.start }}</td>
               <td>{{ entry.end }}</td>
               <td>{{ entry.break }}</td>
               <td>{{ entry.type }}</td>
               <td class="td-net-val">{{ entry.net }}</td>
+              <td class="td-action">
+                <button @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
+                  Bearbeiten
+                </button>
+              </td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="right-sidebar">
-        <form @submit.prevent="handleAddEntry" class="form-card">
+        <form @submit.prevent="handleFormSubmit" class="form-card" :class="{ 'edit-mode-border': isEditing }">
           <div class="form-card-header">
-            <h2 class="box-title">Time tracking</h2>
+            <h2 class="box-title">{{ isEditing ? 'Eintrag bearbeiten' : 'Time tracking' }}</h2>
             <StatusBadge variant="neutral" :label="currentTimesheet?.status || 'Draft'" />
           </div>
+
+          <div v-if="isEditing" class="edit-banner">
+            <span>Bearbeite Eintrag</span>
+            <button type="button" @click="cancelEdit" class="cancel-edit-text">Abbrechen</button>
+          </div>
+
           <label class="input-label">
             Datum
             <input v-model="form.date" type="date" class="text-input" required />
@@ -311,9 +405,14 @@ onMounted(() => {
             <div class="calc-sub">Komplette Zeit - Pausen = Arbeitszeit</div>
           </div>
 
-          <button type="submit" class="submit-btn">
-            <span>✓</span><span>Zeit einreichen</span>
-          </button>
+          <div class="form-actions-row">
+            <button v-if="isEditing" type="button" @click="cancelEdit" class="cancel-btn">
+              Abbrechen
+            </button>
+            <button type="submit" class="submit-btn" :class="{ 'update-btn': isEditing }">
+              <span>✓</span><span>{{ isEditing ? 'Änderungen speichern' : 'Zeit einreichen' }}</span>
+            </button>
+          </div>
         </form>
       </div>
     </div>
@@ -339,16 +438,43 @@ onMounted(() => {
   flex-direction: column;
   gap: 18px;
   color: #172D32;
+  transition: all 0.3s ease;
+}
+.edit-mode-border {
+  outline: 2px #176A70 solid;
+  background-color: #F8FAFA;
+}
+.edit-banner {
+  background: #E8F3F2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12px;
+  color: #176A70;
+  font-weight: 600;
+}
+.cancel-edit-text {
+  background: none;
+  border: none;
+  color: #176A70;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 11px;
 }
 .tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
 .tt-header-row { height: 143px; display: flex; align-items: center; gap: 24px; }
 .tt-title { flex: 1; color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }
 .tt-actions { display: flex; align-items: center; gap: 12px; }
 .disabled-submit-btn { height: 40px; padding: 0 14px; background: #B3B3B3; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; border: none; cursor: not-allowed; }
+.submit-timesheet-btn { height: 40px; padding: 0 16px; background: #176A70; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; border: none; cursor: pointer; transition: background 0.2s; }
+.submit-timesheet-btn:hover { background: #0F4C50; }
+.submit-timesheet-btn:disabled { background: #B3B3B3; cursor: not-allowed; }
+
 .content-split { display: flex; gap: 24px; }
 .table-card { flex: 1; background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; display: flex; flex-direction: column; overflow: hidden; }
 
-/* Header Layout */
 .table-card-header { 
   padding: 20px; 
   display: flex; 
@@ -358,7 +484,6 @@ onMounted(() => {
   gap: 12px;
 }
 
-/* Modernes Design für die Datumsnavigation & Buttons */
 .date-navigation {
   display: flex;
   align-items: center;
@@ -423,11 +548,35 @@ onMounted(() => {
 .box-title { color: #172D32; font-size: 16px; font-weight: 600; }
 .data-table { width: 100%; border-collapse: collapse; text-align: left; }
 .th-row { height: 36px; background: #F8FAFA; border-top: 1px #DFE7E8 solid; border-bottom: 1px #DFE7E8 solid; color: #697B80; font-size: 10px; font-weight: 600; }
-.th-date { padding-left: 20px; width: 136px; }
-.th-start, .th-end, .th-break, .th-net { width: 84px; }
+.th-date { padding-left: 20px; width: 120px; }
+.th-start, .th-end, .th-break, .th-type { width: 75px; }
+.th-net { width: 90px; }
+.th-action { width: 90px; padding-right: 20px; text-align: right; }
+
 .data-tr { height: 38px; border-bottom: 1px #DFE7E8 solid; font-size: 12px; color: #172D32; }
+.data-tr:hover { background-color: #F8FAFA; }
+.editing-row { background-color: #E8F3F2 !important; }
+
 .td-date { padding-left: 20px; }
 .td-net-val { font-weight: 600; }
+.td-action { padding-right: 20px; text-align: right; }
+
+.edit-btn {
+  background: transparent;
+  border: 1px solid #DFE7E8;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 11px;
+  color: #176A70;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.edit-btn:hover {
+  background: #176A70;
+  color: white;
+  border-color: #176A70;
+}
+
 .empty-state { padding: 24px 20px; color: #697B80; font-size: 12px; text-align: center; }
 .right-sidebar { width: 432px; display: flex; flex-direction: column; gap: 20px; }
 .form-card-header { display: flex; justify-content: space-between; align-items: center; }
@@ -438,6 +587,13 @@ onMounted(() => {
 .calc-header { display: flex; justify-content: space-between; color: #176A70; font-size: 12px; font-weight: 500; }
 .calc-val { font-size: 18px; font-weight: 600; }
 .calc-sub { color: #176A70; font-size: 10px; }
-.submit-btn { height: 40px; padding: 0 14px; background: #176A70; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; border: none; cursor: pointer; }
+
+.form-actions-row { display: flex; gap: 8px; }
+.submit-btn { height: 40px; flex: 1; padding: 0 14px; background: #176A70; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; border: none; cursor: pointer; }
+.update-btn { background: #0F4C50; }
+.cancel-btn { height: 40px; padding: 0 12px; background: #F3F4F6; border: 1px solid #DFE7E8; border-radius: 8px; color: #4B5563; font-size: 13px; font-weight: 600; cursor: pointer; }
+.cancel-btn:hover { background: #E5E7EB; }
+
 .error-banner { padding: 12px 16px; background: #FEE2E2; color: #991B1B; border-radius: 8px; font-size: 13px; }
+.success-banner { padding: 12px 16px; background: #D1FAE5; color: #065F46; border-radius: 8px; font-size: 13px; }
 </style>
