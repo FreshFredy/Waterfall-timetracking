@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import EmployeeService from '../services/api.js'
+import { vacationRequestService } from "../services/api";
 
 const props = defineProps({
   activeRoute: { type: String, required: true },
@@ -11,19 +12,39 @@ const props = defineProps({
     default: () => ({ initials: '', name: '', title: '', email: '' }),
   },
   pendingReviewsCount: { type: Number},
-  employeeId: { type: Number,}
+  employeeId: { type: Number}
 })
 
 const takenVacationDays = ref("Laden...")
 const availableVacationDays = ref("Laden...")
 const plannedVacationDays = ref("Laden...")
 const remainingVacationDays = ref(0)
+const vacationEntries = ref([])
 
+// Hilfsfunktion zur Berechnung von Arbeitstagen (Mo-Fr) zwischen zwei Datumsstrings
+const calculateWorkDays = (startStr, endStr) => {
+  if (!startStr || !endStr) return 0
+  const start = new Date(startStr)
+  const end = new Date(endStr)
+  if (end < start) return 0
+
+  let workDays = 0
+  const current = new Date(start)
+  while (current <= end) {
+    const dayOfWeek = current.getDay()
+    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+      workDays++
+    }
+    current.setDate(current.getDate() + 1)
+  }
+  return workDays
+}
+
+// 1. Urlaubsbilanz vom Backend abrufen
 const fetchVacationData = async () => {
     try {
         let currentId = props.employeeId;
 
-        // ID dynamisch über E-Mail auflösen, falls nicht explizit gesetzt
         if ((!currentId || currentId === 1) && props.user && props.user.email) {
             const employeesResponse = await EmployeeService.getAll(props.user.email);
             if (employeesResponse.data && employeesResponse.data.length > 0) {
@@ -31,22 +52,18 @@ const fetchVacationData = async () => {
             }
         }
 
-        // Sicherheitsabfrage: Wenn keine ID da ist, abbrechen (verhindert 'undefined' in der URL)
         if (!currentId || currentId === 'undefined') {
             console.log("Warte auf gültige Mitarbeiter-ID / User-Daten...");
             return;
         }
 
-        // Urlaubsdaten vom Backend abrufen
         const vacationResponse = await EmployeeService.getVacationBalance(currentId)
         const vacData = vacationResponse.data || {}
         
-        console.log("Urlaub vom Backend empfangen:", vacData)
-
-        const annual = vacData.annualDays !== undefined && vacData.annualDays !== null ? vacData.annualDays : 30;
-        const taken = vacData.takenDays !== undefined && vacData.takenDays !== null ? vacData.takenDays : 0;
-        const planned = vacData.plannedDays !== undefined && vacData.plannedDays !== null ? vacData.plannedDays : 0;
-        const remainingLastYear = vacData.remainingDays_last_year !== undefined && vacData.remainingDays_last_year !== null ? vacData.remainingDays_last_year : 0;
+        const annual = vacData.annualDays ?? 30;
+        const taken = vacData.takenDays ?? 0;
+        const planned = vacData.plannedDays ?? 0;
+        const remainingLastYear = vacData.remainingDays_last_year ?? 0;
 
         takenVacationDays.value = taken;
         plannedVacationDays.value = planned;
@@ -67,28 +84,85 @@ const fetchVacationData = async () => {
     }
 }
 
-// Reagiert auf Routenwechsel (z.B. Klick auf den Menüpunkt) und Daten-Updates
+// 2. Reale Urlaubsanträge des Mitarbeiters vom Backend abrufen
+const fetchVacationRequests = async () => {
+    try {
+        let currentId = props.employeeId;
+
+        if ((!currentId || currentId === 1) && props.user && props.user.email) {
+            const employeesResponse = await EmployeeService.getAll(props.user.email);
+            if (employeesResponse.data && employeesResponse.data.length > 0) {
+                currentId = employeesResponse.data[0].id;
+            }
+        }
+
+        if (!currentId || currentId === 'undefined') {
+            return;
+        }
+
+        const response = await vacationRequestService.getRequestsOfEmployee(currentId);
+        
+        vacationEntries.value = response.data.map(req => {
+            const formatDate = (dateStr) => {
+                if (!dateStr) return '';
+                const [y, m, d] = dateStr.split('-');
+                return `${d}.${m}.${y}`;
+            };
+
+            const periodStr = req.startDate === req.endDate
+                ? formatDate(req.startDate)
+                : `${formatDate(req.startDate)} – ${formatDate(req.endDate)}`;
+
+            let variant = 'warning';
+            let displayStatus = 'Ausstehend';
+            
+            const rawStatus = req.status ? req.status.toUpperCase() : 'PENDING';
+            if (rawStatus === 'APPROVED' || rawStatus === 'GENEHMIGT') {
+                variant = 'success';
+                displayStatus = 'Genehmigt';
+            } else if (rawStatus === 'REJECTED' || rawStatus === 'ABGELEHNT') {
+                variant = 'danger';
+                displayStatus = 'Abgelehnt';
+            } else if (rawStatus === 'CANCELLED' || rawStatus === 'STORNIERT') {
+                variant = 'neutral';
+                displayStatus = 'Storniert';
+            }
+
+            const daysCount = req.daysCount || calculateWorkDays(req.startDate, req.endDate);
+
+            return {
+                id: req.id,
+                period: periodStr,
+                days: daysCount,
+                status: displayStatus,
+                variant: variant,
+            };
+        });
+
+    } catch (error) {
+        console.error("Fehler beim Laden der Urlaubsanträge:", error);
+    }
+};
+
+// Reagiert auf Routenwechsel oder Daten-Updates und lädt alle Daten neu
 watch(
   () => [props.activeRoute, props.employeeId, props.user?.email],
   ([route]) => {
-    // Optional: Nur laden, wenn man sich auf der Urlaubs-Route befindet (passe den Namen ggf. an, z.B. 'vacation' oder 'urlaub')
     if (route) {
         fetchVacationData()
+        fetchVacationRequests()
     }
   },
   { immediate: true }
 )
 
-// Formular-Zustand (leer gestartet)
+// Formular-Zustand
 const form = ref({
   startDate: '',
   endDate: '',
 })
 
-
-const vacationEntries = ref([])
-
-// Berechnet die Arbeitstage (Mo–Fr) zwischen Start- und Enddatum
+// Berechnet die Arbeitstage (Mo–Fr) im Formular
 const vacationStats = computed(() => {
   if (!form.value.startDate || !form.value.endDate) return { days: 0, hours: '0:00 h' }
   
@@ -97,16 +171,7 @@ const vacationStats = computed(() => {
   
   if (end < start) return { days: 0, hours: '0:00 h' }
 
-  let workDays = 0
-  const current = new Date(start)
-  
-  while (current <= end) {
-    const dayOfWeek = current.getDay()
-    if (dayOfWeek !== 0 && dayOfWeek !== 6) {
-      workDays++
-    }
-    current.setDate(current.getDate() + 1)
-  }
+  const workDays = calculateWorkDays(form.value.startDate, form.value.endDate)
 
   return {
     days: workDays,
@@ -114,35 +179,47 @@ const vacationStats = computed(() => {
   }
 })
 
-
-const handleAddVacation = () => {
+// Urlaub beantragen und ans Backend senden
+const handleAddVacation = async () => {
   if (vacationStats.value.days <= 0) {
     alert('Bitte ein gültiges Start- und Enddatum (mindestens 1 Arbeitstag) wählen.')
     return
   }
 
-  const formatDate = (dateStr) => {
-    const [y, m, d] = dateStr.split('-')
-    return `${d}.${m}.${y}`
+  let currentId = props.employeeId;
+
+  if ((!currentId || currentId === 1) && props.user && props.user.email) {
+    const employeesResponse = await EmployeeService.getAll(props.user.email);
+    if (employeesResponse.data && employeesResponse.data.length > 0) {
+      currentId = employeesResponse.data[0].id;
+    }
   }
 
-  const periodStr = form.value.startDate === form.value.endDate
-    ? formatDate(form.value.startDate)
-    : `${formatDate(form.value.startDate)} – ${formatDate(form.value.endDate)}`
+  if (!currentId || currentId === 'undefined') {
+    console.log("Warte auf gültige Mitarbeiter-ID / User-Daten...");
+    return;
+  }
 
-  vacationEntries.value.unshift({
-    id: Date.now(),
-    period: periodStr,
-    days: vacationStats.value.days,
-    type: form.value.type,
-    status: 'Ausstehend',
-    variant: 'warning',
-  })
+  const requestPayload = {
+    startDate: form.value.startDate,
+    endDate: form.value.endDate
+  };
 
-  // Formular nach dem Absenden zurücksetzen
-  form.value.startDate = ''
-  form.value.endDate = ''
-  form.value.comment = ''
+  try {
+    await vacationRequestService.create(currentId, requestPayload);
+
+    // Formular zurücksetzen
+    form.value.startDate = ''
+    form.value.endDate = ''
+    
+    // Daten und Antragsliste direkt neu vom Backend laden
+    await fetchVacationData();
+    await fetchVacationRequests();
+
+  } catch (error) {
+    console.error("Fehler beim Erstellen des Urlaubsantrags:", error);
+    alert('Der Urlaubsantrag konnte nicht gespeichert werden.');
+  }
 }
 </script>
 
@@ -184,7 +261,7 @@ const handleAddVacation = () => {
           </thead>
           <tbody>
             <tr v-if="vacationEntries.length === 0">
-              <td colspan="4" class="empty-state">
+              <td colspan="3" class="empty-state">
                 Noch keine Urlaubsanträge vorhanden.
               </td>
             </tr>
@@ -273,7 +350,6 @@ const handleAddVacation = () => {
 .th-row { height: 36px; background: #F8FAFA; border-top: 1px #DFE7E8 solid; border-bottom: 1px #DFE7E8 solid; color: #697B80; font-size: 10px; font-weight: 600; }
 .th-date { padding-left: 20px; width: 200px; }
 .th-days { width: 100px; }
-.th-type { width: 180px; }
 .th-status { width: 120px; }
 
 .empty-state {

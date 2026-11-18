@@ -98,9 +98,47 @@ class SickLeaveDataService {
     }
 }
 
+class VacationRequestDataService {
+
+    // Entspricht: @GetMapping("/VacationRequests") mit @RequestParam employeeId
+    getRequestsOfEmployee(employeeId) {
+        return http.get(`/VacationRequest-management/VacationRequests?employeeId=${employeeId}`);
+    }
+
+    // Entspricht: @GetMapping("/VacationRequests/pending") mit @RequestParam supervisorId
+    getPending(supervisorId) {
+        return http.get(`/VacationRequest-management/VacationRequests/pending?supervisorId=${supervisorId}`);
+    }
+
+    // Entspricht: @GetMapping("/VacationRequests/{id}")
+    getRequest(id) {
+        return http.get(`/VacationRequest-management/VacationRequests/${id}`);
+    }
+
+    // Entspricht: @PostMapping("/VacationRequests") mit @RequestParam employeeId und @RequestBody
+    create(employeeId, data) {
+        return http.post(`/VacationRequest-management/VacationRequests?employeeId=${employeeId}`, data);
+    }
+
+    // Entspricht: @PostMapping("/VacationRequests/{id}/approve") mit @RequestParam supervisorId
+    approve(id, supervisorId) {
+        return http.post(`/VacationRequest-management/VacationRequests/${id}/approve?supervisorId=${supervisorId}`);
+    }
+
+    // Entspricht: @PostMapping("/VacationRequests/{id}/reject") mit @RequestParam und @RequestBody { reason }
+    reject(id, supervisorId, reason) {
+        return http.post(`/VacationRequest-management/VacationRequests/${id}/reject?supervisorId=${supervisorId}`, { reason });
+    }
+
+    // Entspricht: @PostMapping("/VacationRequests/{id}/cancel") mit @RequestParam employeeId
+    cancel(id, employeeId) {
+        return http.post(`/VacationRequest-management/VacationRequests/${id}/cancel?employeeId=${employeeId}`);
+    }
+}
 
 
 
+export const vacationRequestService = new VacationRequestDataService();
 export const sickLeaveService = new SickLeaveDataService();
 export const timesheetService = new TimesheetDataService();
 export default new EmployeeDataService();
