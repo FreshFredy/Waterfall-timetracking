@@ -5,7 +5,63 @@ import StatusBadge from '../components/ui/StatusBadge.vue'
 import EmployeeService from '../services/api.js'
 import { timesheetService } from '../services/api.js'
 import { sickLeaveService } from "../services/api.js";
+import WeeklyChart from '../components/ui/WeeklyChart.vue'
 
+const weeklyData = ref([])
+
+const buildWeeks = (entries, year, month) => {
+  const pad = (n) => String(n).padStart(2, '0')
+  const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'short' })
+  const daysInMonth = new Date(year, month, 0).getDate()
+
+  const weeks = []
+  const weekOfDay = {}
+  let current = null
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const dow = new Date(year, month - 1, day).getDay()      // 0 = Sunday ... 6 = Saturday
+    if (!current || (dow === 1 && current.first !== null)) {
+      current = { first: null, last: null, work: 0, sick: 0 }
+      weeks.push(current)
+    }
+    if (dow !== 0 && dow !== 6) {
+      if (current.first === null) current.first = day
+      current.last = day
+    }
+    weekOfDay[day] = current
+  }
+
+  for (const entry of entries) {
+    const week = weekOfDay[Number(String(entry.entryDate).slice(8, 10))]
+    if (!week) continue
+    const hours = entry.creditedHours || 0
+    if (entry.entryType === 'SICK') week.sick += hours
+    else week.work += hours
+  }
+
+  return weeks.map((w) => ({
+    label: w.first === w.last
+      ? `${pad(w.first)}. ${monthName}`
+      : `${pad(w.first)}.–${pad(w.last)}. ${monthName}`,
+    work: w.work,
+    sick: w.sick,
+  }))
+}
+
+const greeting = computed(() => {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Good morning'
+  if (hour >= 12 && hour < 18) return 'Good afternoon'
+  return 'Good evening'
+})
+const monthshow = computed(() => {
+  const date = new Date()
+  return date.toLocaleString('en-US', { month: 'long' });
+})
+const yearshow = computed(() => {
+  const date = new Date()
+  return date.toLocaleString('en-US', { year: 'numeric' });
+})
 const props = defineProps({
   activeRoute: { type: String, required: true },
   role: { type: String, default: 'employee' },
@@ -56,6 +112,7 @@ const fetchDashboardData = async () => {
 
         if (Array.isArray(timesheetData) && timesheetData.length > 0) {
             const currentSheet = timesheetData[0]
+             weeklyData.value = buildWeeks(currentSheet.timeEntries || [], year, month)
             const totalHours = currentSheet.workedHours ?? currentSheet.creditedHours ?? 0
 
             if (totalHours > 0) {
@@ -73,6 +130,7 @@ const fetchDashboardData = async () => {
             }
         } else {
             workingTime.value = "0:00 h"
+            weeklyData.value = buildWeeks([], year, month)    
         }
 
         // 1. Flex-Konto & Arbeitszeit abrufen
@@ -131,50 +189,62 @@ onMounted(() => {
   <div class="dashboard-container">
     <div class="top-row">
       <div class="welcome-col">
-        <div class="tagline">DASHBOARD</div>
-        <h1 class="greeting">Hallo {{ user.name }}</h1>
-        <p class="sub-greeting">Hier ist dein monatlicher Recap.</p>
+        <div class="tagline">YOUR PERSONAL DASHBOARD</div>
+        <h1 class="greeting">{{ greeting }} {{ user.name }}</h1>
+        <p class="sub-greeting">Your time at a glance. Here is your {{ monthshow }} recap.</p>
       </div>
     </div>
+ 
 
 
 <div class="kpi-grid">
-  <StatCard title="Working time" :value="workingTime" :icon="icons.time" />
-  <StatCard title="Flex balance" :value="flexBalance" :icon="icons.flex" />
+  <StatCard class="wide" :title="`Working time in ${monthshow}`" :value="workingTime" :icon="icons.time" />
+  <StatCard title="Your Flex balance" :value="flexBalance" :icon="icons.flex" class="flex-container"/>
   <StatCard title="Sickleave" :value="sickLeave" :icon="icons.sick" />
 </div>
 
-    <div class="middle-row">
-      <div class="chart-box vacation-box">
-        <div>
-          <h2 class="box-title">Urlaubsplanung</h2>
-          <p class="box-subtitle">Verwalte deinen Urlaub</p>
-        </div>
-        
-        <div class="vacation-content">
-          <div class="vacation-info">
-            <span class="vacation-label">Verfügbare Urlaubstage:</span>
-            <span class="vacation-value">{{ availableVacationDays }} Tage</span>
-          </div>
-          
-        <button @click="emit('navigate', 'vacation')" class="view-timesheet-link">Zum Urlaub →</button>
-        </div>
-      </div>
+<div class="middle-row">
+  <WeeklyChart
+    title="A month in good rhythm."
+    :subtitle="`Weekly creditable time · ${monthshow} ${yearshow}`"
+    :weeks="weeklyData"
+  />
 
-      <div class="summary-card">
-        <h2 class="box-title">Monats - Zusammenfassung</h2>
-        <div class="summary-subrow">
+  <div class="right-col">
+    <div class="summary-card">
+
+      <h2 class="box-title">Your monthly summary</h2>
+      <div class="form-card-sub">
+        <h3 class="box-subtitle">{{ monthshow }} {{ yearshow }}</h3>
+        <StatusBadge variant="neutral" :label="currentTimesheet?.status || 'Draft'" />
+      </div>
+      
+      <div class="summary-subrow"></div>
+      <div class="summary-metrics">
+        <div class="metric-row"><span class="metric-lbl">Working Time</span><span class="metric-val">{{ workingTime }}</span></div>
+        <div class="metric-row"><span class="metric-lbl">Targettime · 22 × 8:00 h</span><span class="metric-val">176:00 h</span></div>
+      </div>
+      <div class="divider-line"></div>
+      <button @click="emit('navigate', 'time-tracking')" class="view-timesheet-link">View Timesheet →</button>
+    </div>
+
+    <div class="chart-box vacation-box">
+      <div>
+        <h2 class="box-title">Vacation overwiev</h2>
+        <p class="box-subtitle">Manage your vacation</p>
+      </div>
+      <div class="vacation-content">
+        <div class="vacation-info">
+          <span class="vacation-label">Available vacation days:</span>
+          <span class="vacation-value">{{ availableVacationDays }} days</span>
         </div>
-        <div class="summary-metrics">
-          <div class="metric-row"><span class="metric-lbl">Working Time</span><span class="metric-val">{{ workingTime }}</span>
-        </div>
-          <div class="metric-row"><span class="metric-lbl">Targettime · 22 × 8:00 h</span><span class="metric-val">176:00 h</span></div>
-        </div>
-        <div class="divider-line"></div>
-        <button @click="emit('navigate', 'time-tracking')" class="view-timesheet-link">Zum Timesheet →</button>
+        <button @click="emit('navigate', 'vacation')" class="view-timesheet-link">To vacation overwiev →</button>
       </div>
     </div>
   </div>
+</div>
+</div>
+ 
 </template>
 
 <style scoped>
@@ -197,13 +267,17 @@ onMounted(() => {
   color: #172D32;
   line-height: 23.20px;
   margin: 0 0 4px 0;
+  text-align: left;
 }
 
 .box-subtitle {
   font-size: 12px;
   color: #697B80;
-  line-height: 17.40px;
+  line-height: 23.95px;
   margin: 0;
+  max-width: 150px;
+  text-align: left;
+  
 }
 
 .vacation-content {
@@ -236,6 +310,8 @@ onMounted(() => {
 }
 
 .dashboard-container {
+  width: 100%;
+  box-sizing: border-box;
   padding: 32px;
   overflow: hidden;
   flex-direction: column;
@@ -250,6 +326,7 @@ onMounted(() => {
   justify-content: space-between;
   align-items: center;
   display: inline-flex;
+  text-align: left;
 }
 .welcome-col {
   flex: 1 1 0;
@@ -293,6 +370,7 @@ onMounted(() => {
   display: inline-flex;
   flex-direction: column;
 }
+.kpi-grid .wide { flex: 1.4 1 0; }
 .chart-box { flex: 1; padding: 24px; gap: 20px; }
 .summary-card { width: 360px; padding: 24px; gap: 18px; }
 .summary-subrow { display: flex; justify-content: space-between; align-items: center; }
@@ -302,4 +380,17 @@ onMounted(() => {
 .metric-val { color: #172D32; font-size: 13px; font-weight: 600; }
 .divider-line { height: 1px; background: #DFE7E8; width: 100%; }
 .view-timesheet-link { color: #176A70; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer; text-align: left; padding: 0; }
+.kpi-grid .wide { flex: 1.4 1 0; }
+.right-col { width: 360px; flex: none; display: flex; flex-direction: column; gap: 24px; }
+.right-col .summary-card { width: auto; }
+.right-col .vacation-box { flex: none; }
+.dashboard-container { gap: 16px; }             
+.top-row { margin-bottom: 8px; }                 
+.middle-row, .bottom-row { gap: 16px; }      
+.middle-row { flex-wrap: wrap; }    
+.right-col { gap: 16px; } 
+.weekly-chart { min-width: 480px; }
+.x-axis span { white-space: nowrap; }
+
+.form-card-sub { display: flex; justify-content: space-between; align-items: center; }
 </style>

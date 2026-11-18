@@ -108,5 +108,6 @@ defineProps({
   font-size: 16px;
   line-height: 1;
 }
+.stat-card flex-container{background-color: #172D32;}
 
 </style>
