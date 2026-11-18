@@ -51,74 +51,43 @@ const handleAddEntry = () => {
 <template>
   <div class="tt-container">
     <div class="tt-header-row">
-      <h1 class="tt-title">Time, that counts</h1>
+      <h1 class="tt-title">Zeiterfassung</h1>
       <div class="tt-actions">
         <button class="disabled-submit-btn" disabled><span>Submit Timesheet</span></button>
-        <StatusBadge variant="pending" label="Pending" />
+
       </div>
     </div>
 
     <div class="tt-subbar">
-      <div class="month-switcher">
-        <button class="switcher-arrow">‹</button>
-        <div class="current-month-box"><span>📅</span><span>September 2026</span></div>
-        <button class="switcher-arrow">›</button>
-        <StatusBadge variant="pending" label="Pending" />
-      </div>
+
       <div class="submitted-count">
-        <span class="check-icon">✓</span><span>22 of 22 days submitted</span>
+
       </div>
     </div>
 
-    <div class="kpi-grid">
-      <StatCard title="Working time" value="164:30 h" subtitle="174:30 h on Site − 10:00 h break" />
-      <StatCard title="Sickleave" value="16:00 h" subtitle="2 days sickleave × 8:00 h" />
-      <StatCard title="Target" value="176:00 h" subtitle="22 weekdays × 8:00 h" />
-      <StatCard title="Flexchange Septemper" value="+4:30 h" subtitle="180:30 h creditable − 176:00 h target" highlighted />
-    </div>
 
     <div class="content-split">
       <div class="table-card">
         <div class="table-card-header">
           <div>
-            <h2 class="box-title">Daily details</h2>
-            <p class="box-subtitle">September 2026 · 22 weekdays · weekends hidden</p>
+            <h2 class="box-title">Timesheet</h2>
           </div>
           <div class="badge-row">
-            <StatusBadge variant="neutral" label="20 working days" />
-            <StatusBadge variant="purple" label="2 days sickleave" />
+
           </div>
         </div>
 
         <table class="data-table">
           <thead>
             <tr class="th-row">
-              <th class="th-date">Date</th>
+              <th class="th-date">Datum</th>
               <th class="th-start">Start</th>
-              <th class="th-end">End</th>
-              <th class="th-break">Break</th>
-              <th class="th-net">Net</th>
-              <th class="th-credit">Credit</th>
-              <th class="th-type">Type</th>
+              <th class="th-end">Ende</th>
+              <th class="th-break">Pause</th>
+              <th class="th-net">Arbeitszeit</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="row in dailyEntries" :key="row.date" class="data-tr" :style="{ background: row.type === 'Sickleave' ? '#F9F7FC' : 'white' }">
-              <td class="td-date" style="color: #172D32;">{{ row.date }}</td>
-              <td :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#697B80' }">{{ row.start }}</td>
-              <td :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#697B80' }">{{ row.end }}</td>
-              <td :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#697B80' }">{{ row.break }}</td>
-              <td class="td-net-val" :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#172D32' }">{{ row.net }}</td>
-              <td :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#697B80' }">{{ row.credit }}</td>
-              <td :style="{ color: row.type === 'Sickleave' ? '#72608B' : '#697B80' }">{{ row.type }}</td>
-            </tr>
-          </tbody>
-          <tfoot>
-            <tr class="tfoot-row">
-              <td class="td-date">Total</td>
-              <td>–</td><td>–</td><td>10:00</td><td>164:30</td><td>16:00</td><td></td>
-            </tr>
-          </tfoot>
+          
         </table>
       </div>
 
@@ -128,10 +97,8 @@ const handleAddEntry = () => {
             <h2 class="box-title">Time tracking</h2>
             <StatusBadge variant="neutral" label="Draft" />
           </div>
-          <div class="form-desc">New Month: October</div>
-
           <label class="input-label">
-            Date
+            Datum
             <input v-model="form.date" type="date" class="text-input" />
           </label>
 
@@ -141,52 +108,74 @@ const handleAddEntry = () => {
               <input v-model="form.start" type="time" class="text-input" />
             </label>
             <label class="input-label flex-1">
-              End
+              Ende
               <input v-model="form.end" type="time" class="text-input" />
             </label>
           </div>
 
           <label class="input-label">
-            Break duration in minutes
+            Pausenzeit in Minuten
             <input v-model.number="form.breakMinutes" type="number" min="0" step="5" class="text-input" />
-          </label>
-
-          <label class="input-label">
-            Project
-            <select v-model="form.project" class="select-input">
-              <option v-for="p in projects" :key="p" :value="p">{{ p }}</option>
-            </select>
           </label>
 
           <div class="calc-box">
             <div class="calc-header">
-              <span>Net working time</span>
-              <span class="calc-val">{{ timeStats.net }}</span>
+              <span class="calc-val">Arbeitszeit =  {{ timeStats.net }}</span>
             </div>
-            <div class="calc-sub">{{ timeStats.onSite }} on Site − {{ timeStats.breakStr }} break = {{ timeStats.net }} working time</div>
+            <div class="calc-sub">Komplette Zeit  -  Pausen =  Arbeitszeit</div>
           </div>
 
           <button type="submit" class="submit-btn">
             <span>✓</span><span>Submit</span>
           </button>
-          <div class="form-footer-note">Will be credited to October.</div>
         </form>
 
-        <div class="month-glance-card">
-          <h3 class="box-title">September at a glance</h3>
-          <div class="glance-row"><span class="glance-lbl">Working days</span><span class="glance-val">20 days</span></div>
-          <div class="glance-row"><span class="glance-lbl">Sickleave</span><span class="glance-val">2 days</span></div>
-          <div class="glance-row"><span class="glance-lbl">Weekend</span><span class="glance-val">8 days</span></div>
-          <div class="glance-row"><span class="glance-lbl">Missing Entries</span><span class="glance-val">None</span></div>
-          <div class="divider-line"></div>
-          <div class="glance-footer">Working modell: 40 h / Week Monday - Friday · 8:00 h / Day</div>
-        </div>
       </div>
     </div>
   </div>
 </template>
 
 <style scoped>
+.text-input, .select-input, input[type="date"], input[type="time"], input[type="number"] {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  color-scheme: light; /* Hält auch das Uhr-/Kalender-Icon dunkel */
+}
+
+/* Platzhalter-Farbe etwas dezenter machen */
+.text-input::placeholder {
+  color: #697B80;
+}
+.input-label { 
+  display: flex; 
+  flex-direction: column; 
+  gap: 7px; 
+  color: #172D32; 
+  font-size: 12px; 
+}
+.form-card {
+  width: 432px;
+  flex-shrink: 0;
+  padding: 24px;
+  background: white;
+  border-radius: 12px;
+  outline: 1px #DFE7E8 solid;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  color: #172D32; /* Erzwingt schwarze/dunkle Schrift auf dem weißen Hintergrund */
+}
+.calc-box {
+  background: #F8FAFA;
+  padding: 12px;
+  border-radius: 8px;
+  color: #172D32;
+}
+
+.calc-sub {
+  color: #697B80; /* Etwas heller für den Untertitel */
+  font-size: 11px;
+}
 .tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
 .tt-header-row { height: 143px; display: flex; align-items: center; gap: 24px; }
 .tt-title { flex: 1; color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }

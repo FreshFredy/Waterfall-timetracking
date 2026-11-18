@@ -64,6 +64,26 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
           </div>
         </button>
 
+        <!-- NEU: Vacation-Menüpunkt für alle Rollen im Personal-Bereich -->
+        <button
+          @click="emit('navigate', 'vacation')"
+          class="nav-item"
+          :style="{ background: activeRoute === 'vacation' ? '#E8F3F2' : 'transparent' }"
+        >
+          <div class="nav-icon-box">
+            <div
+              class="nav-icon-shape"
+              :style="{ outline: activeRoute === 'vacation' ? '1.70px #176A70 solid' : '1.70px #697B80 solid' }"
+            ></div>
+          </div>
+          <div
+            class="nav-text"
+            :style="{ color: activeRoute === 'vacation' ? '#176A70' : '#697B80', fontWeight: activeRoute === 'vacation' ? '600' : '500' }"
+          >
+            Urlaub
+          </div>
+        </button>
+
         <div v-if="role === 'supervisor'" class="group-section">
           <div class="nav-category">TEAM MANAGEMENT</div>
           <button
@@ -82,9 +102,6 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
               :style="{ color: activeRoute === 'monthly-review' ? '#176A70' : '#697B80', fontWeight: activeRoute === 'monthly-review' ? '600' : '500' }"
             >
               Monthly review
-            </div>
-            <div v-if="pendingReviewsCount > 0" class="badge-count">
-              {{ pendingReviewsCount }}
             </div>
           </button>
         </div>
@@ -113,7 +130,7 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
       </div>
     </div>
 
-    <!-- UNTERER BEREICH: Hilfe-Box, Benutzer-Profil & Abmelden (unten fixiert) -->
+    <!-- UNTERER BEREICH: Benutzer-Profil & Abmelden -->
     <div class="sidebar-bottom-content">
       <div class="sidebar-footer">
         <div class="user-footer">
@@ -139,7 +156,7 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
   border-right: 1px solid #DFE7E8;
   display: flex;
   flex-direction: column;
-  justify-content: space-between; /* Teilt Inhalt oben und unten auf */
+  justify-content: space-between;
   padding: 24px;
   height: 100vh;
   position: sticky;
@@ -234,48 +251,9 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
   font-size: 13px;
 }
 
-.badge-count {
-  margin-left: auto;
-  background: #176A70;
-  color: white;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-}
-
 .group-section {
   display: flex;
   flex-direction: column;
-}
-
-.help-box {
-  background: #F8FAFA;
-  padding: 14px;
-  border-radius: 8px;
-  border: 1px solid #DFE7E8;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.help-title {
-  font-size: 12px;
-  font-weight: 600;
-  color: #172D32;
-}
-
-.help-desc {
-  font-size: 11px;
-  color: #697B80;
-}
-
-.help-link {
-  font-size: 11px;
-  color: #176A70;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 4px;
 }
 
 .sidebar-footer {
@@ -323,11 +301,6 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
 .user-role {
   font-size: 11px;
   color: #697B80;
-}
-
-.user-arrow {
-  color: #697B80;
-  font-size: 16px;
 }
 
 .logged-in-email {
