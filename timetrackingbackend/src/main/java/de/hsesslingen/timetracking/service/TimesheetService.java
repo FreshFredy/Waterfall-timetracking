@@ -10,19 +10,18 @@ import de.hsesslingen.timetracking.EntryTypes.TimeEntryType;
 import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.dto.TimeentryRequestDTO;
 import de.hsesslingen.timetracking.dto.TimesheetDTO;
-import de.hsesslingen.timetracking.dto.*;
+
 import de.hsesslingen.timetracking.mapper.TimeentryMapper;
 import de.hsesslingen.timetracking.mapper.TimesheetMapper;
-import de.hsesslingen.timetracking.mapper.NotificationMapper;
+
 import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.model.Supervisor;
 import de.hsesslingen.timetracking.model.Timeentry;
 import de.hsesslingen.timetracking.model.Timesheet;
-import de.hsesslingen.timetracking.model.Notification;
+
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 import de.hsesslingen.timetracking.repository.SupervisorRepository;
 import de.hsesslingen.timetracking.repository.TimesheetRepository;
-import de.hsesslingen.timetracking.repository.NotificationRepository;
 
 @Service
 public class TimesheetService {
