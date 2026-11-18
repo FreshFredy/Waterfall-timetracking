@@ -1,17 +1,23 @@
 package de.hsesslingen.timetracking.controller;
 
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
-import de.hsesslingen.timetracking.dto.*;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-
-import de.hsesslingen.timetracking.service.*;
+import de.hsesslingen.timetracking.dto.NotificationResponseDTO;
+import de.hsesslingen.timetracking.service.NotificationService;
 
 
 @RestController
+@CrossOrigin(origins = "*")
 @RequestMapping("/api-timetracking/Notification-management")
 public class NotificationController {
 

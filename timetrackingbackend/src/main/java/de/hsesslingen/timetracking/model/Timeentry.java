@@ -1,10 +1,21 @@
 package de.hsesslingen.timetracking.model;
 
-import jakarta.persistence.*;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalTime;
-import java.time.Duration;
-import de.hsesslingen.timetracking.EntryTypes.*;
+
+import de.hsesslingen.timetracking.EntryTypes.TimeEntryType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
 
 
 
@@ -33,7 +44,7 @@ public class Timeentry {
     @JoinColumn(name = "timesheet")
     private Timesheet timesheet;
 
-    @Enumerated(EnumType.STRING)
+    @Enumerated(EnumType.ORDINAL)
     private TimeEntryType entry_type;
 
     @Column(name = "creditedHours")

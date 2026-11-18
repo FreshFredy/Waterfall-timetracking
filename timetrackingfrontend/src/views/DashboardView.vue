@@ -3,6 +3,8 @@ import { computed, ref, onMounted } from 'vue'
 import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import EmployeeService from '../services/api.js'
+import { timesheetService } from '../services/api.js'
+
 
 const props = defineProps({
   activeRoute: { type: String, required: true },
@@ -14,7 +16,12 @@ const props = defineProps({
   pendingReviewsCount: { type: Number},
   employeeId: { type: Number,}
 })
-
+const formatMinutes = (mins) => {
+  if (mins == null || isNaN(mins)) return '0:00'
+  const h = Math.floor(mins / 60)
+  const m = String(mins % 60).padStart(2, '0')
+  return `${h}:${m}`
+}
 // Funktion für den Button "Urlaub beantragen"
 const handleRequestVacation = () => {
 //TODO Urlaubsformular
@@ -30,7 +37,7 @@ const availableVacationDays = ref("Laden...")
 const fetchDashboardData = async () => {
     try {
         let currentId = props.employeeId;
-
+        
         // ID dynamisch über E-Mail auflösen, falls nicht explizit gesetzt
         if ((!currentId || currentId === 1) && props.user && props.user.email) {
             const employeesResponse = await EmployeeService.getAll(props.user.email);
@@ -38,7 +45,35 @@ const fetchDashboardData = async () => {
                 currentId = employeesResponse.data[0].id;
             }
         }
+        const now = new Date()
+        const year = now.getFullYear()
+        const month = now.getMonth() + 1 // Aktueller Monat (1-basiert)
 
+        const timesheetsResponse = await timesheetService.getTimesheets(currentId, month, year)
+        const timesheetData = timesheetsResponse.data
+
+        if (Array.isArray(timesheetData) && timesheetData.length > 0) {
+            const currentSheet = timesheetData[0]
+            // Versuche direkt die Summe vom Timesheet zu nehmen (workedHours oder creditedHours)
+            const totalHours = currentSheet.workedHours ?? currentSheet.creditedHours ?? 0
+
+            if (totalHours > 0) {
+                const h = Math.floor(totalHours)
+                const m = Math.round((totalHours - h) * 60)
+                workingTime.value = `${h}:${String(m).padStart(2, '0')} h`
+            } else {
+                // Fallback: Summiere die Stunden aus den Einzel-Einträgen auf
+                const entries = currentSheet.timeEntries || []
+                const totalMinutes = entries.reduce((sum, entry) => {
+                    return sum + Math.round((entry.creditedHours || 0) * 60)
+                }, 0)
+                const h = Math.floor(totalMinutes / 60)
+                const m = totalMinutes % 60
+                workingTime.value = totalMinutes > 0 ? `${h}:${String(m).padStart(2, '0')} h` : "0:00 h"
+            }
+        } else {
+            workingTime.value = "0:00 h"
+        }
         // 1. Flex-Konto & Arbeitszeit abrufen
         const flexResponse = await EmployeeService.getFlexAccount(currentId)
         console.log("Flex Response vom Backend:", flexResponse.data)
@@ -49,9 +84,7 @@ const fetchDashboardData = async () => {
         
         flexBalance.value = `${balanceVal >= 0 ? '+' : ''}${balanceVal}:00 h`;
 
-        workingTime.value = flexResponse.data.totalWorkingTime !== undefined && flexResponse.data.totalWorkingTime !== null
-            ? flexResponse.data.totalWorkingTime 
-            : "0:00 h";
+
 
         // 2. Urlaubskonto abrufen
         const vacationResponse = await EmployeeService.getVacationBalance(currentId)
@@ -121,7 +154,7 @@ onMounted(() => {
       </div>
 
       <div class="summary-card">
-        <h2 class="box-title">30-Tage Zusammenfassung</h2>
+        <h2 class="box-title">Monats - Zusammenfassung</h2>
         <div class="summary-subrow">
         </div>
         <div class="summary-metrics">
