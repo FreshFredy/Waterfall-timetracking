@@ -85,11 +85,10 @@ const formattedPeriod = computed(() => {
   })
 })
 
-// Prüfen, ob der aktuelle Timesheet eingereicht werden kann (z. B. wenn er existiert und Status 'Draft' / nicht eingereicht ist)
+// Prüfen, ob der aktuelle Timesheet eingereicht werden kann
 const canSubmitTimesheet = computed(() => {
   if (!currentTimesheet.value || !currentTimesheet.value.id) return false
   const status = currentTimesheet.value.status ? currentTimesheet.value.status.toUpperCase() : 'DRAFT'
-  // Erlaubt das Einreichen, solange es ein Entwurf ist
   return status === 'DRAFT' || status === 'OPEN' || status === 'ANGELEGT'
 })
 
@@ -176,6 +175,7 @@ const mapBackendEntryToRow = (entry) => {
 const handleEditClick = (entry) => {
   isEditing.value = true
   editingEntryId.value = entry.id
+  errorMessage.value = ''
   
   form.value = {
     date: entry.rawDate,
@@ -190,6 +190,7 @@ const handleEditClick = (entry) => {
 const cancelEdit = () => {
   isEditing.value = false
   editingEntryId.value = null
+  errorMessage.value = ''
   form.value = {
     date: new Date().toISOString().substr(0, 10),
     start: '08:30',
@@ -203,6 +204,15 @@ const cancelEdit = () => {
 const handleFormSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
+
+  // HIER DIE PRÜFUNG: Wenn wir NICHT im Editier-Modus sind, prüfen ob für das Datum schon ein Eintrag existiert
+  if (!isEditing.value) {
+    const existingEntryForDay = dailyEntries.value.find(entry => entry.rawDate === form.value.date)
+    if (existingEntryForDay) {
+      errorMessage.value = `Für den ${form.value.date} existiert bereits ein Zeiteintrag. Pro Tag ist nur ein Eintrag erlaubt. Du kannst den bestehenden Eintrag stattdessen bearbeiten.`
+      return
+    }
+  }
   
   const payload = {
     entryDate: form.value.date,
