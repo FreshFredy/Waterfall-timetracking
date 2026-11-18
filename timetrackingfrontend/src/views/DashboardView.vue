@@ -4,7 +4,7 @@ import StatCard from '../components/ui/StatCard.vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import EmployeeService from '../services/api.js'
 import { timesheetService } from '../services/api.js'
-
+import { sickLeaveService } from "../services/api.js";
 
 const props = defineProps({
   activeRoute: { type: String, required: true },
@@ -21,10 +21,6 @@ const formatMinutes = (mins) => {
   const h = Math.floor(mins / 60)
   const m = String(mins % 60).padStart(2, '0')
   return `${h}:${m}`
-}
-// Funktion für den Button "Urlaub beantragen"
-const handleRequestVacation = () => {
-//TODO Urlaubsformular
 }
 
 const emit = defineEmits(['navigate'])
@@ -49,12 +45,12 @@ const fetchDashboardData = async () => {
         const year = now.getFullYear()
         const month = now.getMonth() + 1 // Aktueller Monat (1-basiert)
 
+        // Arbeitszeiten laden
         const timesheetsResponse = await timesheetService.getTimesheets(currentId, month, year)
         const timesheetData = timesheetsResponse.data
 
         if (Array.isArray(timesheetData) && timesheetData.length > 0) {
             const currentSheet = timesheetData[0]
-            // Versuche direkt die Summe vom Timesheet zu nehmen (workedHours oder creditedHours)
             const totalHours = currentSheet.workedHours ?? currentSheet.creditedHours ?? 0
 
             if (totalHours > 0) {
@@ -62,7 +58,6 @@ const fetchDashboardData = async () => {
                 const m = Math.round((totalHours - h) * 60)
                 workingTime.value = `${h}:${String(m).padStart(2, '0')} h`
             } else {
-                // Fallback: Summiere die Stunden aus den Einzel-Einträgen auf
                 const entries = currentSheet.timeEntries || []
                 const totalMinutes = entries.reduce((sum, entry) => {
                     return sum + Math.round((entry.creditedHours || 0) * 60)
@@ -74,35 +69,43 @@ const fetchDashboardData = async () => {
         } else {
             workingTime.value = "0:00 h"
         }
+
         // 1. Flex-Konto & Arbeitszeit abrufen
         const flexResponse = await EmployeeService.getFlexAccount(currentId)
-        console.log("Flex Response vom Backend:", flexResponse.data)
-        
         const balanceVal = flexResponse.data.balance !== undefined && flexResponse.data.balance !== null 
             ? flexResponse.data.balance 
             : (flexResponse.data.balanceHours !== undefined && flexResponse.data.balanceHours !== null ? flexResponse.data.balanceHours : 0);
         
         flexBalance.value = `${balanceVal >= 0 ? '+' : ''}${balanceVal}:00 h`;
 
-
-
         // 2. Urlaubskonto abrufen
         const vacationResponse = await EmployeeService.getVacationBalance(currentId)
         const vacData = vacationResponse.data || {}
         
-        console.log("Urlaub vom Backend empfangen:", vacData)
-
-        const annual = vacData.annualDays !== undefined && vacData.annualDays !== null ? vacData.annualDays : 30;
-        const taken = vacData.takenDays !== undefined && vacData.takenDays !== null ? vacData.takenDays : 0;
-        const planned = vacData.plannedDays !== undefined && vacData.plannedDays !== null ? vacData.plannedDays : 0;
-        const remainingLastYear = vacData.remainingDays_last_year !== undefined && vacData.remainingDays_last_year !== null ? vacData.remainingDays_last_year : 0;
+        const annual = vacData.annualDays ?? 30;
+        const taken = vacData.takenDays ?? 0;
+        const planned = vacData.plannedDays ?? 0;
+        const remainingLastYear = vacData.remainingDays_last_year ?? 0;
 
         availableVacationDays.value = vacData.remainingDays !== undefined && vacData.remainingDays !== null
             ? vacData.remainingDays 
             : ((annual + remainingLastYear) - (taken + planned));
 
-        const sick = vacData.sickDays !== undefined && vacData.sickDays !== null ? vacData.sickDays : 0;
-        sickLeave.value = `${sick} Tage`;
+        // 3. Krankheiten (Sick Leaves) anhand des 'day'-Feldes für den aktuellen Monat filtern
+        const sickLeaveResponse = await sickLeaveService.getByEmployee(currentId)
+        const sickLeaves = sickLeaveResponse.data || []
+        
+        let currentMonthSickDays = 0
+        sickLeaves.forEach(leave => {
+            const dateStr = leave.day || leave.startDate || leave.date
+            if (dateStr) {
+                const leaveDate = new Date(dateStr)
+                if (leaveDate.getFullYear() === year && (leaveDate.getMonth() + 1) === month) {
+                    currentMonthSickDays += Number(leave.daysCount ?? leave.days ?? 1)
+                }
+            }
+        })
+        sickLeave.value = `${currentMonthSickDays} Tage`
 
     } catch (error) {
         console.error("Fehler beim Laden der Dashboard-Daten:", error)
@@ -198,7 +201,6 @@ onMounted(() => {
   margin: 0;
 }
 
-/* Auf untereinander (column) umgestellt, damit der Button unter den Tagen steht */
 .vacation-content {
   display: flex;
   flex-direction: column;
@@ -224,7 +226,6 @@ onMounted(() => {
   color: #176A70;
 }
 
-/* Button nimmt die volle Breite ein oder sitzt sauber darunter */
 .vacation-submit-btn {
   width: 100%;
 }
@@ -271,36 +272,6 @@ onMounted(() => {
   font-family: Inter, sans-serif;
   line-height: 18.85px;
 }
-.date-selector-btn {
-  height: 40px;
-  padding: 0 14px;
-  background: white;
-  border-radius: 8px;
-  outline: 1px #DFE7E8 solid;
-  outline-offset: -1px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #172D32;
-  font-size: 13px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-}
-.alert-banner {
-  align-self: stretch;
-  padding: 14px 18px;
-  background: #FBF3E4;
-  border-radius: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 12px;
-}
-.alert-text {
-  flex: 1;
-  color: #946722;
-  font-size: 13px;
-}
 .kpi-grid, .middle-row, .bottom-row {
   align-self: stretch;
   display: inline-flex;
@@ -318,48 +289,12 @@ onMounted(() => {
   flex-direction: column;
 }
 .chart-box { flex: 1; padding: 24px; gap: 20px; }
-.legend { display: inline-flex; gap: 18px; align-items: center; }
-.legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #697B80; }
-.legend-dot { width: 8px; height: 8px; border-radius: 2px; }
-.legend-dot.work { background: #176A70; }
-.legend-dot.sick { background: #B6A5CF; }
-.chart-area { height: 183px; display: inline-flex; align-items: flex-end; gap: 14px; }
-.yaxis { width: 30px; height: 166px; padding-bottom: 25px; display: flex; flex-direction: column; justify-content: space-between; color: #91A0A4; font-size: 10px; }
-.bar-column { flex: 1; height: 183px; display: inline-flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 8px; }
-.bar-val { color: #172D32; font-size: 12px; font-weight: 600; }
-.bar-wrapper { width: 58px; border-top-left-radius: 5px; border-top-right-radius: 5px; display: flex; flex-direction: column; overflow: hidden; }
-.bar-sick { width: 100%; background: #B6A5CF; }
-.bar-work { width: 100%; background: #176A70; }
-.bar-label { color: #697B80; font-size: 10px; }
 .summary-card { width: 360px; padding: 24px; gap: 18px; }
 .summary-subrow { display: flex; justify-content: space-between; align-items: center; }
-.summary-month { color: #172D32; font-size: 14px; font-weight: 600; }
 .summary-metrics { display: flex; flex-direction: column; gap: 9px; }
 .metric-row { display: flex; justify-content: space-between; }
 .metric-lbl { color: #697B80; font-size: 12px; }
 .metric-val { color: #172D32; font-size: 13px; font-weight: 600; }
-.metric-val.highlight { color: #176A70; }
 .divider-line { height: 1px; background: #DFE7E8; width: 100%; }
-.submission-note { display: flex; align-items: flex-start; gap: 10px; }
-.sub-time { color: #172D32; font-size: 12px; font-weight: 500; }
-.sub-next { color: #697B80; font-size: 11px; }
-.view-timesheet-link, .all-entries-btn { color: #176A70; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer; text-align: left; padding: 0; }
-.entries-box { flex: 1; padding: 24px; gap: 20px; }
-.entries-header { display: flex; justify-content: space-between; align-items: center; }
-.entries-table { width: 100%; border-collapse: collapse; text-align: left; }
-.th-date { width: 140px; color: #697B80; font-size: 10px; padding-bottom: 8px; }
-.th-range { width: 200px; color: #697B80; font-size: 10px; padding-bottom: 8px; }
-.th-break { width: 125px; color: #697B80; font-size: 10px; padding-bottom: 8px; }
-.th-net { color: #697B80; font-size: 10px; padding-bottom: 8px; }
-.tr-row { height: 43px; border-top: 1px #DFE7E8 solid; }
-.td-date { color: #172D32; font-size: 12px; }
-.td-range, .td-break { color: #697B80; font-size: 12px; }
-.td-net { color: #172D32; font-size: 12px; font-weight: 600; }
-.today-cta { width: 360px; padding: 24px; background: #E8F3F2; border-radius: 12px; display: inline-flex; flex-direction: column; justify-content: space-between; gap: 15px; }
-.cta-top { display: flex; flex-direction: column; gap: 12px; }
-.cta-badge { display: inline-flex; align-items: center; gap: 8px; color: #176A70; font-size: 11px; font-weight: 600; }
-.cta-title { color: #172D32; font-size: 21px; font-weight: 600; line-height: 27.30px; }
-.cta-desc { color: #697B80; font-size: 12px; line-height: 17.40px; }
-.cta-button { height: 40px; padding: 0 14px; background: #176A70; border-radius: 8px; border: none; color: white; font-size: 13px; font-weight: 600; display: flex; justify-content: center; align-items: center; gap: 8px; cursor: pointer; }
-.cta-button:hover { background: #125458; }
+.view-timesheet-link { color: #176A70; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer; text-align: left; padding: 0; }
 </style>

@@ -35,6 +35,7 @@ const form = ref({
   start: '08:30',
   end: '17:00',
   breakMinutes: 30,
+  entryType: 'WORK', // Bleibt im Hintergrund auf WORK (oder anpassbar)
 })
 
 // Navigation State für Monat und Jahr
@@ -128,6 +129,19 @@ const mapBackendEntryToRow = (entry) => {
   const netHours = entry.creditedHours ?? 0
   const netMinsFormatted = formatMinutes(Math.round(netHours * 60))
 
+  // Backend-Typ abfangen (unterstützt entryType, entry_type und type)
+  const rawType = entry.entryType ?? entry.entry_type ?? entry.type ?? 'WORK'
+
+  const typeMapping = {
+    'WORK': 'Arbeit',
+    'SICK': 'Krank',
+    'krank': 'Krank',
+    'VACATION': 'Urlaub',
+    'URLAUB': 'Urlaub'
+  }
+
+  const displayType = typeMapping[rawType] ?? rawType
+
   return {
     id: entry.id,
     date: formattedDate,
@@ -135,7 +149,7 @@ const mapBackendEntryToRow = (entry) => {
     end: endStr,
     break: breakMins > 0 ? formatMinutes(breakMins) : '0:00',
     net: `${netMinsFormatted}`,
-    type: entry.entry_type || 'WORK',
+    type: displayType,
   }
 }
 
@@ -148,7 +162,7 @@ const handleAddEntry = async () => {
     startTime: `${form.value.start}:00`,    
     endTime: `${form.value.end}:00`,        
     breakMinutes: form.value.breakMinutes,  
-    entryType: 1                     
+    entryType: form.value.entryType // Sendet den Typ mit (Standard 'WORK')
   }
 
   try {
@@ -240,21 +254,23 @@ onMounted(() => {
               <th class="th-start">Start</th>
               <th class="th-end">Ende</th>
               <th class="th-break">Pause</th>
+              <th class="th-break">Typ</th>
               <th class="th-net">Arbeitszeit</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="5" class="empty-state">Lade Zeiteinträge...</td>
+              <td colspan="6" class="empty-state">Lade Zeiteinträge...</td>
             </tr>
             <tr v-else-if="dailyEntries.length === 0">
-              <td colspan="5" class="empty-state">Keine Einträge für diesen Monat vorhanden.</td>
+              <td colspan="6" class="empty-state">Keine Einträge für diesen Monat vorhanden.</td>
             </tr>
             <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr">
               <td class="td-date">{{ entry.date }}</td>
               <td>{{ entry.start }}</td>
               <td>{{ entry.end }}</td>
               <td>{{ entry.break }}</td>
+              <td>{{ entry.type }}</td>
               <td class="td-net-val">{{ entry.net }}</td>
             </tr>
           </tbody>
