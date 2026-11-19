@@ -1,11 +1,13 @@
 package de.hsesslingen.timetracking.model;
 import de.hsesslingen.timetracking.EntryTypes.*;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import jakarta.persistence.*;
-
+import java.util.Map;
 
 
 @Entity
@@ -148,6 +150,22 @@ public void addEntry(Timeentry entry) {
     }
     public List<Timeentry> getTimeEntries(){
         return this.timeEntries;
+    }
+    public double getFlexChange() {
+        int target = employee.getTargetH() == null ? 8 : employee.getTargetH();
+
+        Map<LocalDate, Double> perDay = new HashMap<>();
+        for (Timeentry e : timeEntries) {
+            perDay.merge(e.getEntryDate(), (double) e.getCreditedHours(), Double::sum);
+        }
+
+        double change = 0;
+        for (Map.Entry<LocalDate, Double> day : perDay.entrySet()) {
+            DayOfWeek dow = day.getKey().getDayOfWeek();
+            boolean weekend = dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
+            change += day.getValue() - (weekend ? 0 : target);
+        }
+        return change;
     }
 
 

@@ -19,9 +19,8 @@ public class FlexAccountMapper {
         );
     }
     public void updateFlexFromDTO(FlexAccountDTO dto, FlexAccount fc) {
-        if (dto.balanceHours() != null) {
-            fc.setBalance_hours(dto.balanceHours());
-        }
+        
+        fc.setBalance_hours(dto.balanceHours());
         fc.setSoft_limit_max(dto.softLimitMax());
         fc.setSoft_limit_min(dto.softLimitMin());
     }

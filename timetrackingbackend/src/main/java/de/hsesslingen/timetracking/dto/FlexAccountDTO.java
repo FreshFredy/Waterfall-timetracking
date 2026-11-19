@@ -1,7 +1,7 @@
 package de.hsesslingen.timetracking.dto;
 
 public record FlexAccountDTO(
-    Integer balanceHours,
+    double balanceHours,
     Integer softLimitMax,
     Integer softLimitMin
 ) {}

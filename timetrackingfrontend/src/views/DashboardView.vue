@@ -7,6 +7,14 @@ import { timesheetService } from '../services/api.js'
 import { sickLeaveService } from "../services/api.js";
 import WeeklyChart from '../components/ui/WeeklyChart.vue'
 
+const flexSubtitle = ref('')
+
+const formatHours = (h, withSign = false) => {
+  const sign = h < 0 ? '-' : (withSign ? '+' : '')
+  const totalMin = Math.round(Math.abs(h) * 60)
+  return `${sign}${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, '0')} h`
+}
+
 const weeklyData = ref([])
 
 const buildWeeks = (entries, year, month) => {
@@ -135,12 +143,12 @@ const fetchDashboardData = async () => {
 
         // 1. Flex-Konto & Arbeitszeit abrufen
         const flexResponse = await EmployeeService.getFlexAccount(currentId)
-        const balanceVal = flexResponse.data.balance !== undefined && flexResponse.data.balance !== null 
-            ? flexResponse.data.balance 
-            : (flexResponse.data.balanceHours !== undefined && flexResponse.data.balanceHours !== null ? flexResponse.data.balanceHours : 0);
-        
-        flexBalance.value = `${balanceVal >= 0 ? '+' : ''}${balanceVal}:00 h`;
+        const balance = Number(flexResponse.data.balanceHours ?? flexResponse.data.balance ?? 0)
+        const sheet = Array.isArray(timesheetData) ? timesheetData[0] : null
+        const pending = sheet && sheet.status !== 'APPROVED' ? Number(sheet.flexChange ?? 0) : 0
 
+        flexBalance.value = formatHours(balance + pending, true)
+        flexSubtitle.value = pending !== 0 ? `Includes ${formatHours(pending, true)} pending` : ''
         // 2. Urlaubskonto abrufen
         const vacationResponse = await EmployeeService.getVacationBalance(currentId)
         const vacData = vacationResponse.data || {}
@@ -199,7 +207,7 @@ onMounted(() => {
 
 <div class="kpi-grid">
   <StatCard class="wide" :title="`Working time in ${monthshow}`" :value="workingTime" :icon="icons.time" />
-  <StatCard title="Your Flex balance" :value="flexBalance" :icon="icons.flex" class="flex-container"/>
+  <StatCard highlighted title="Your flex balance" :value="flexBalance" :subtitle="flexSubtitle" :icon="icons.flex" />
   <StatCard title="Sickleave" :value="sickLeave" :icon="icons.sick" />
 </div>
 

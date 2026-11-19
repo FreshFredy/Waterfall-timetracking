@@ -34,7 +34,9 @@ public class TimesheetMapper {
             t.getEmployee().getId(),
             t.getApprover() != null ? t.getApprover().getId() : null,
             t.getWorkedHours(),
-            entries
+            entries,
+            t.getFlexChange()
+
         );
     }
 }

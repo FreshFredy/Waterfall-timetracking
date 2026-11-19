@@ -13,7 +13,7 @@ public class FlexAccount {
     private long id;
 
     @Column(name = "balance_hours")
-    private Integer balance_hours; 
+    private double balance_hours;
 
     @Column(name = "soft_limit_min")
     private Integer soft_limit_min;
@@ -37,12 +37,7 @@ public FlexAccount(Integer soft_limit_min, Integer soft_limit_max, Employee empl
 public long getID(){
     return id;
 }
-public void setBalance_hours(Integer balance_hours){
-    this.balance_hours = balance_hours;
-}
-public Integer getBalance_hours(){
-    return balance_hours;
-}
+
 public void setSoft_limit_min(Integer soft_limit_min){
     this.soft_limit_min = soft_limit_min;
 }
@@ -58,8 +53,13 @@ public Integer getSoft_limit_max(){
 public void setEmployee(Employee employee){
     this.employee = employee;
 }
-public boolean withinLimit(Integer change){
-    if((change + balance_hours) < soft_limit_max || (balance_hours + change) > soft_limit_min) return true;
-    else return false;
+public boolean withinLimit(double change){
+    double next = balance_hours + change;
+    return next <= soft_limit_max && next >= soft_limit_min; 
 }
+public void addTime(double balance_hours){
+    this.balance_hours += balance_hours;
+}
+public double getBalance_hours() { return balance_hours; }
+public void setBalance_hours(double balance_hours) { this.balance_hours = balance_hours;}
 }
