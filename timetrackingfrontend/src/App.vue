@@ -184,8 +184,10 @@ const handleLogout = () => {
         <DashboardView 
           v-if="activeRoute === 'dashboard'" 
           :user="currentUser"
+          :active-route="activeRoute"
           @navigate="handleNavigate" 
         />
+        
         <TimeTrackingView 
           v-else-if="activeRoute === 'timetracking'"
           :user="currentUser"

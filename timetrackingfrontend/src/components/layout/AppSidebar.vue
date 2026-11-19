@@ -143,7 +143,7 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
             <span class="logged-in-email" v-if="user.email">{{ user.email }}</span>
           </div>
         </div>
-        <button @click="emit('logout')" class="logout-btn">Abmelden</button>
+        <button @click="emit('logout')" class="logout-btn">Sign out</button>
       </div>
     </div>
   </aside>

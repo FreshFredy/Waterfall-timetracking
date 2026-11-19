@@ -198,7 +198,8 @@ const fetchDashboardData = async () => {
                 }
             }
         })
-        sickLeave.value = `${currentMonthSickDays} Tage`
+        if(currentMonthSickDays == 1)sickLeave.value = `${currentMonthSickDays} Day`
+        else{sickLeave.value = `${currentMonthSickDays} Days`}
 
     } catch (error) {
         console.error("Fehler beim Laden der Dashboard-Daten:", error)

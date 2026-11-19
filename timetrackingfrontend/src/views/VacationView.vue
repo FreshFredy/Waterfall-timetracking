@@ -292,7 +292,7 @@ const yearshow = computed(() => {
   <div class="tt-container">
     <div class="tt-header-row">
       <div class="tt-heading">
-      <p class="tt-subtitle">TIME OFF & RECHARGE</p>
+      <p class="tt-subtitle-top">TIME OFF & RECHARGE</p>
       <h1 class="tt-title">Vacation management </h1>
       <p class="tt-subtitle">Work hard, recharge smart. Keep an eye on your days off.</p>
       </div>
@@ -407,11 +407,19 @@ const yearshow = computed(() => {
 .tt-actions { display: flex; align-items: center; gap: 12px; }
 .tt-subtitle { 
 
+
   color: #697B80;
   font-size: 13px;
   font-family: Inter, sans-serif;
   line-height: 18.85px;
   }
+.tt-subtitle-top{
+    font-weight: 600;
+    color: #697B80;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  line-height: 18.85px;
+}
 .tt-heading {
   flex: 1;
   display: flex;

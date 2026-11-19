@@ -29,13 +29,13 @@ const emit = defineEmits(['close', 'mark-as-read', 'mark-all-read'])
       <!-- Button zum Alle-als-gelesen-markieren (wird nur angezeigt, wenn ungelesene da sind) -->
       <div class="drawer-actions" v-if="notifications.some(n => !n.read)">
         <button type="button" class="mark-all-btn" @click="emit('mark-all-read')">
-          Alle als gelesen markieren
+          Mark all as read
         </button>
       </div>
 
       <div class="drawer-content">
         <div v-if="notifications.length === 0" class="empty-state">
-          Keine neuen Benachrichtigungen vorhanden.
+          No new notifications.
         </div>
 
         <!-- Einzelne Benachrichtigungen mit Klick-Event -->

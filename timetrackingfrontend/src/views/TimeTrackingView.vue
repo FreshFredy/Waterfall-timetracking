@@ -27,7 +27,7 @@ const resolveEmployeeId = async () => {
     }
   }
 
-  throw new Error("Konnte keine Employee-ID ermitteln: Weder props.employeeId noch eine gültige E-Mail / Employee-Daten vorhanden.")
+  throw new Error("Could not determine an employee ID: Neither `props.employeeId` nor a valid email address / employee data is available..")
 }
 
 const form = ref({
@@ -89,7 +89,7 @@ const formattedPeriod = computed(() => {
 const canSubmitTimesheet = computed(() => {
   if (!currentTimesheet.value || !currentTimesheet.value.id) return false
   const status = currentTimesheet.value.status ? currentTimesheet.value.status.toUpperCase() : 'DRAFT'
-  return status === 'DRAFT' || status === 'OPEN' || status === 'ANGELEGT'
+  return status === 'DRAFT' || status === 'OPEN' || status === 'APPROACHED'
 })
 
 // 1. Timesheet und Einträge vom Backend laden (GET)
@@ -116,7 +116,7 @@ const fetchTimesheetData = async () => {
     }
   } catch (err) {
     console.error('API Fehler:', err)
-    errorMessage.value = 'Daten konnten nicht vom Server geladen werden.'
+    errorMessage.value = 'Data could not be loaded from the server.'
   } finally {
     isLoading.value = false
   }
@@ -148,11 +148,11 @@ const mapBackendEntryToRow = (entry) => {
   const rawType = entry.entryType ?? entry.entry_type ?? entry.type ?? 'WORK'
 
   const typeMapping = {
-    'WORK': 'Arbeit',
-    'SICK': 'Krank',
-    'krank': 'Krank',
-    'VACATION': 'Urlaub',
-    'URLAUB': 'Urlaub'
+    'WORK': 'Work',
+    'SICK': 'Sick',
+    'krank': 'Sick',
+    'VACATION': 'Vacation',
+    'URLAUB': 'Vacation'
   }
 
   const displayType = typeMapping[rawType] ?? rawType
@@ -291,7 +291,7 @@ onMounted(() => {
   <div class="tt-container">
     <div class="tt-header-row">
       <div class="tt-heading">
-        <p class="tt-subtitle">YOUR WORKDAY LOG</p>
+        <p class="tt-subtitle-top">YOUR WORKDAY LOG</p>
       <h1 class="tt-title">Time tracking</h1>
       <p class="tt-subtitle">Log your hours effortlessly. Stay on top of your day.</p>
       </div>
@@ -621,6 +621,13 @@ onMounted(() => {
 }
 .tt-subtitle { 
   color: #697B80;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  line-height: 18.85px;
+}
+.tt-subtitle-top{
+    font-weight: 600;
+    color: #697B80;
   font-size: 13px;
   font-family: Inter, sans-serif;
   line-height: 18.85px;

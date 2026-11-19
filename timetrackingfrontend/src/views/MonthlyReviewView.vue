@@ -197,26 +197,26 @@ const handleApproveTimesheet = async (timesheetId) => {
 const handleRejectTimesheet = async (timesheetId) => {
   const reason = timesheetRejectionReasons.value[timesheetId];
   if (!reason || reason.trim() === '') {
-    alert('Bitte gib einen Grund für die Ablehnung an.');
+    alert('Enter rejection reason.');
     return;
   }
 
   try {
     const supervisorId = await getSupervisorId();
     if (!supervisorId) {
-      alert("Fehler: Konnte keine Supervisor-ID ermitteln.");
+      alert("Error: Could not determine a supervisor ID.");
       return;
     }
 
     await timesheetService.reject(timesheetId, supervisorId, reason);
-    alert("Timesheet erfolgreich abgelehnt.");
+    alert("Timesheet successfully rejected.");
     timesheetRejectionReasons.value[timesheetId] = '';
     closeDetailModal();
     await fetchSubmittedTimesheets();
   } catch (error) {
-    console.error("Fehler beim Ablehnen des Timesheets:", error);
+    console.error("Error while rejecting the timesheet:", error);
     const msg = errorText(error);
-    alert(`Timesheet konnte nicht abgelehnt werden: ${msg}`);
+    alert(`Timesheet could not be rejected: ${msg}`);
   }
 }
 
@@ -227,8 +227,8 @@ const handleApprove = async (requestId) => {
     await vacationRequestService.approve(requestId, supervisorId);
     await fetchPendingRequests();
   } catch (error) {
-    console.error("Fehler beim Genehmigen des Antrags:", error);
-    alert("Antrag konnte nicht genehmigt werden.");
+    console.error("Error while approving the request:", error);
+    alert("Application could not be approved.");
   }
 }
 
@@ -236,7 +236,7 @@ const handleApprove = async (requestId) => {
 const handleReject = async (requestId) => {
   const reason = rejectionReasons.value[requestId];
   if (!reason || reason.trim() === '') {
-    alert('Bitte gib einen Grund für die Ablehnung an.');
+    alert('Please provide a reason for the rejection.');
     return;
   }
 
@@ -246,8 +246,8 @@ const handleReject = async (requestId) => {
     rejectionReasons.value[requestId] = '';
     await fetchPendingRequests();
   } catch (error) {
-    console.error("Fehler beim Ablehnen des Antrags:", error);
-    alert("Antrag konnte nicht abgelehnt werden.");
+    console.error("Error while rejecting the application:", error);
+    alert("The application could not be rejected.");
   }
 }
 
@@ -267,30 +267,31 @@ watch(
 <template>
   <div class="mr-container">
     <div class="mr-header">
-      <div class="tagline">Übersicht & Anträge</div>
-      <h1 class="mr-main-title">Review die Urlaubsanträge & Zeiterfassungen deines Teams</h1>
+      <div class="tagline">Overview & Applications</div>
+      <h1 class="mr-main-title">Review your team's leave requests and time records</h1>
+      <div class="subheader">Who’s in, who’s out, and what’s logged. Everything at a glance.</div>
     </div>
 
     <!-- 1. Tabelle: Ausstehende Urlaubsanträge -->
     <div class="table-card">
       <div class="table-card-header">
-        <h2 class="box-title">Ausstehende Anträge</h2>
+        <h2 class="box-title">Pending applications</h2>
       </div>
 
       <table class="data-table">
         <thead>
           <tr class="th-row">
-            <th class="th-employee">Mitarbeiter</th>
-            <th class="th-date">Zeitraum</th>
-            <th class="th-days">Tage</th>
-            <th class="th-reason">Grund für Ablehnung</th>
-            <th class="th-actions">Aktionen</th>
+            <th class="th-employee">Employee</th>
+            <th class="th-date">Period</th>
+            <th class="th-days">Days</th>
+            <th class="th-reason">Reason for rejection</th>
+            <th class="th-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="pendingRequests.length === 0">
             <td colspan="5" class="empty-state">
-              Keine ausstehenden Urlaubsanträge vorhanden.
+             No pending leave requests.
             </td>
           </tr>
           <tr v-else v-for="req in pendingRequests" :key="req.id" class="data-tr">
@@ -307,10 +308,10 @@ watch(
             </td>
             <td class="td-actions-group">
               <button @click="handleApprove(req.id)" class="approve-btn" title="Antrag genehmigen">
-                Genehmigen
+                Permit
               </button>
               <button @click="handleReject(req.id)" class="reject-btn" title="Antrag ablehnen">
-                Ablehnen
+                Reject
               </button>
             </td>
           </tr>
@@ -321,23 +322,23 @@ watch(
     <!-- 2. Tabelle: Eingereichte Timesheets -->
     <div class="table-card">
       <div class="table-card-header">
-        <h2 class="box-title">Eingereichte Timesheets der Mitarbeiter</h2>
+        <h2 class="box-title">Timesheets submitted by employees</h2>
       </div>
 
       <table class="data-table">
         <thead>
           <tr class="th-row">
-            <th class="th-employee">Mitarbeiter</th>
-            <th class="th-date">Periode (Monat.Jahr)</th>
+            <th class="th-employee">Employee</th>
+            <th class="th-date">Period (Monat.Jahr)</th>
             <th class="th-days">Status</th>
-            <th class="th-reason">Gesamtstunden</th>
-            <th class="th-actions">Aktionen</th>
+            <th class="th-reason">Total hours</th>
+            <th class="th-actions">Actions</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="submittedTimesheets.length === 0">
             <td colspan="5" class="empty-state">
-              Keine eingereichten Timesheets vorhanden.
+              No timesheets have been submitted.
             </td>
           </tr>
           <tr v-else v-for="ts in submittedTimesheets" :key="ts.id" class="data-tr">
@@ -349,7 +350,7 @@ watch(
             <td class="td-center">{{ ts.totalHours }} h</td>
             <td class="td-actions-group">
               <button @click="handleViewTimesheet(ts)" class="view-btn" title="Timesheet ansehen">
-                Ansehen
+                Open
               </button>
             </td>
           </tr>
@@ -375,10 +376,10 @@ watch(
               <tr class="th-row">
                 <th class="th-date">Datum</th>
                 <th>Start</th>
-                <th>Ende</th>
-                <th>Pause</th>
-                <th>Typ</th>
-                <th class="th-net">Arbeitszeit</th>
+                <th>End</th>
+                <th>Break</th>
+                <th>Type</th>
+                <th class="th-net">Working hours</th>
               </tr>
             </thead>
             <tbody>
@@ -407,11 +408,11 @@ watch(
               class="reason-input-modal"
             />
             <button @click="handleRejectTimesheet(selectedTimesheet.id)" class="reject-btn">
-              Ablehnen
+              Reject
             </button>
           </div>
           <button @click="handleApproveTimesheet(selectedTimesheet.id)" class="approve-btn-large">
-            Timesheet Genehmigen
+            Accept timesheet 
           </button>
         </div>
       </div>
@@ -422,7 +423,7 @@ watch(
 
 <style scoped>
 .mr-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
-.mr-header { display: flex; flex-direction: column; gap: 8px; }
+.mr-header { display: flex; flex-direction: column; gap: 8px; text-align: left;}
 .tagline { color: #176A70; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
 .mr-main-title { color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }
 
@@ -592,5 +593,13 @@ watch(
 }
 .approve-btn-large:hover {
   background: #047857;
+}
+
+.subheader{
+    font-weight: 600;
+    color: #697B80;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  line-height: 18.85px;
 }
 </style>

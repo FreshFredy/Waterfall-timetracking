@@ -121,7 +121,7 @@ const handleSubmit = async () => {
   }
 
     if (!form.value.employeeId || previewDays.value.length === 0) {
-      alert("Bitte Employee ID und einen gültigen Zeitraum angeben.")
+      alert("Please provide an employee ID and a valid time period.")
       return
     }
 
@@ -189,7 +189,7 @@ const handleSearch = async () => {
             v-model="form.employeeId"
             type="text"
             class="text-input"
-            placeholder="Employee ID eingeben..."
+            placeholder="Enter employee ID..."
             required
           />
         </label>
@@ -247,7 +247,7 @@ const handleSearch = async () => {
           <div class="preview-kpi-row">
             <div class="preview-kpi-box light">
               <span class="pkpi-lbl">Absent</span>
-              <span class="pkpi-val">{{ previewDays.length }} Tage</span>
+              <span class="pkpi-val">{{ previewDays.length }} {{ previewDays.length == 1 ? 'Day' : 'Days' }}</span>
             </div>
           </div>
         </div>
@@ -281,7 +281,7 @@ const handleSearch = async () => {
               v-model="searchEmployeeId"
               type="text"
               class="text-input"
-              placeholder="Employee ID eingeben..."
+              placeholder="Enter employee ID ..."
               required
             />
           </label>

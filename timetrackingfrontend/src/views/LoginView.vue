@@ -23,7 +23,7 @@ const handleLogin = async () => {
     const data = textResponse ? JSON.parse(textResponse) : {}
 
     if (!response.ok) {
-      throw new Error(data.error || 'Anmeldung fehlgeschlagen.')
+      throw new Error(data.error || 'Login failed.')
     }
 
     // Übergibt E-Mail, Name und die vom Backend erkannte Rolle an App.vue
@@ -34,7 +34,7 @@ const handleLogin = async () => {
     })
 
   } catch (err) {
-    errorMessage.value = err.message || 'Verbindungsfehler zum Server.'
+    errorMessage.value = err.message || 'Connection error to the server.'
   } finally {
     isLoading.value = false
   }
@@ -46,8 +46,8 @@ const handleLogin = async () => {
     <div class="login-card">
       <div class="login-header">
         <div class="logo-badge">⏱️</div>
-        <h1 class="login-title">Anmeldung</h1>
-        <p class="login-subtitle">Zeiterfassung & Team-Management</p>
+        <h1 class="login-title">Login</h1>
+        <p class="login-subtitle">Time Tracking & Team Management</p>
       </div>
 
       <div v-if="errorMessage" class="error-banner">
@@ -66,7 +66,7 @@ const handleLogin = async () => {
         </label>
 
         <button type="submit" class="submit-btn" :disabled="isLoading">
-          {{ isLoading ? 'Wird angemeldet...' : 'Anmelden' }}
+          {{ isLoading ? 'Being logged in...' : 'Loggin in' }}
         </button>
       </form>
     </div>
