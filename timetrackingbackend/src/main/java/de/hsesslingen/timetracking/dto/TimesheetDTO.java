@@ -13,5 +13,5 @@ public record TimesheetDTO(
     Long approverId,                       
     float workedHours,                    
     List<TimeentryResponseDTO> timeEntries,
-    double balanceHours
+    double flexChange
 ) {}
