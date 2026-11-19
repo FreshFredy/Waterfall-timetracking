@@ -10,5 +10,8 @@ public class HR extends Employee {
 
     public HR(String firstname, String lastname, String username, String email, String password, Integer targetH){
         super(firstname,lastname,username, email,password,targetH, null);
+    }
+    public HR(String firstname, String lastname, String username, String email, String password, Integer targetH, Supervisor supervisor) {
+        super(firstname, lastname, username, email, password, targetH, supervisor);
     } 
 }

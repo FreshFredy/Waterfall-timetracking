@@ -35,8 +35,7 @@ public class DataInitializer implements CommandLineRunner {
             employeeRepository.save(testEmployee);
 
             HR testHr = new HR(
-                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8
-            );
+                "Sarah", "Weber", "sarah.w", "hr@company.com", "123456", 8, testSupervisor);
             employeeRepository.save(testHr);
             
             System.out.println(">>> Test-Benutzer (Employee, Supervisor, HR) wurden geladen! <<<");
