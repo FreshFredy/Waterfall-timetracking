@@ -126,6 +126,7 @@ public class TimesheetService {
     public TimesheetDTO approve(long timesheetId, long supervisorId) {
         Timesheet sheet = findTimesheet(timesheetId);
         sheet.approve(requireResponsibleSupervisor(sheet, supervisorId));
+        sheet.getEmployee().getFlexAccount().addTime(sheet.getFlexChange());
         notificationService.notify(sheet.getEmployee(),
             "Your timesheet for " + sheet.getMonth() + "/" + sheet.getYear() + " was approved");
         return timesheetMapper.toDTO(sheet);

@@ -63,9 +63,13 @@ public class Timeentry {
         calculateCreditedHours();
     }
 
-    public void calculateCreditedHours(){
-     if (entry_type == TimeEntryType.SICK) {
+public void calculateCreditedHours() {
+    if (entry_type == TimeEntryType.SICK) {
         this.creditedHours = 8;
+        return;
+    }
+    if (entry_type == TimeEntryType.FLEXTIME) {
+        this.creditedHours = 0;          // a flex day off credits nothing, the target makes it a minus
         return;
     }
     if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {

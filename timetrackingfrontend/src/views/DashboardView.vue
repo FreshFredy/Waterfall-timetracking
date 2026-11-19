@@ -7,7 +7,23 @@ import { timesheetService } from '../services/api.js'
 import { sickLeaveService } from "../services/api.js";
 import WeeklyChart from '../components/ui/WeeklyChart.vue'
 
+const currentTimesheet = ref(null)
+
+const statusLabels = { DRAFT: 'Draft', SUBMITTED: 'Pending', APPROVED: 'Approved', REJECTED: 'Rejected' }
+const statusLabel = computed(() => statusLabels[currentTimesheet.value?.status] ?? 'Draft')
+const flexSubtitle = ref('')
+const monthFlex = ref(0)
+const flexIsPending = ref(false)
+
+const formatHours = (h, withSign = false) => {
+  const sign = h < 0 ? '-' : (withSign ? '+' : '')
+  const totalMin = Math.round(Math.abs(h) * 60)
+  return `${sign}${Math.floor(totalMin / 60)}:${String(totalMin % 60).padStart(2, '0')} h`
+}
+
 const weeklyData = ref([])
+
+const targetPerDay = 8            // later: the employee's targetH
 
 const buildWeeks = (entries, year, month) => {
   const pad = (n) => String(n).padStart(2, '0')
@@ -21,7 +37,7 @@ const buildWeeks = (entries, year, month) => {
   for (let day = 1; day <= daysInMonth; day++) {
     const dow = new Date(year, month - 1, day).getDay()      // 0 = Sunday ... 6 = Saturday
     if (!current || (dow === 1 && current.first !== null)) {
-      current = { first: null, last: null, work: 0, sick: 0 }
+      current = { first: null, last: null, work: 0, sick: 0, bookedDays: new Set() }
       weeks.push(current)
     }
     if (dow !== 0 && dow !== 6) {
@@ -32,11 +48,15 @@ const buildWeeks = (entries, year, month) => {
   }
 
   for (const entry of entries) {
-    const week = weekOfDay[Number(String(entry.entryDate).slice(8, 10))]
+    const day = Number(String(entry.entryDate).slice(8, 10))
+    const week = weekOfDay[day]
     if (!week) continue
     const hours = entry.creditedHours || 0
     if (entry.entryType === 'SICK') week.sick += hours
     else week.work += hours
+
+    const dow = new Date(year, month - 1, day).getDay()
+    if (dow !== 0 && dow !== 6) week.bookedDays.add(day)       // only weekdays have a target
   }
 
   return weeks.map((w) => ({
@@ -45,8 +65,12 @@ const buildWeeks = (entries, year, month) => {
       : `${pad(w.first)}.–${pad(w.last)}. ${monthName}`,
     work: w.work,
     sick: w.sick,
+    target: w.bookedDays.size * targetPerDay,
   }))
 }
+
+const monthTarget = computed(() => weeklyData.value.reduce((sum, w) => sum + w.target, 0))
+const targetDays = computed(() => Math.round(monthTarget.value / targetPerDay))
 
 const greeting = computed(() => {
   const hour = new Date().getHours()
@@ -112,7 +136,7 @@ const fetchDashboardData = async () => {
 
         if (Array.isArray(timesheetData) && timesheetData.length > 0) {
             const currentSheet = timesheetData[0]
-             weeklyData.value = buildWeeks(currentSheet.timeEntries || [], year, month)
+            weeklyData.value = buildWeeks(currentSheet.timeEntries || [], year, month)
             const totalHours = currentSheet.workedHours ?? currentSheet.creditedHours ?? 0
 
             if (totalHours > 0) {
@@ -130,16 +154,22 @@ const fetchDashboardData = async () => {
             }
         } else {
             workingTime.value = "0:00 h"
-            weeklyData.value = buildWeeks([], year, month)    
+            weeklyData.value = buildWeeks([], year, month)
         }
 
         // 1. Flex-Konto & Arbeitszeit abrufen
         const flexResponse = await EmployeeService.getFlexAccount(currentId)
-        const balanceVal = flexResponse.data.balance !== undefined && flexResponse.data.balance !== null 
-            ? flexResponse.data.balance 
-            : (flexResponse.data.balanceHours !== undefined && flexResponse.data.balanceHours !== null ? flexResponse.data.balanceHours : 0);
-        
-        flexBalance.value = `${balanceVal >= 0 ? '+' : ''}${balanceVal}:00 h`;
+        const balance = Number(flexResponse.data.balanceHours ?? flexResponse.data.balance ?? 0)
+
+        const sheet = Array.isArray(timesheetData) && timesheetData.length > 0 ? timesheetData[0] : null
+        currentTimesheet.value = sheet
+
+        monthFlex.value = sheet ? Number(sheet.flexChange ?? 0) : 0
+        flexIsPending.value = !!sheet && sheet.status !== 'APPROVED'
+        const pending = flexIsPending.value ? monthFlex.value : 0
+
+        flexBalance.value = formatHours(balance + pending, true)
+        flexSubtitle.value = pending !== 0 ? `Includes ${formatHours(pending, true)} pending` : ''
 
         // 2. Urlaubskonto abrufen
         const vacationResponse = await EmployeeService.getVacationBalance(currentId)
@@ -182,7 +212,6 @@ const fetchDashboardData = async () => {
 onMounted(() => {
     fetchDashboardData()
 })
-
 </script>
 
 <template>
@@ -194,57 +223,63 @@ onMounted(() => {
         <p class="sub-greeting">Your time at a glance. Here is your {{ monthshow }} recap.</p>
       </div>
     </div>
- 
 
-
-<div class="kpi-grid">
-  <StatCard class="wide" :title="`Working time in ${monthshow}`" :value="workingTime" :icon="icons.time" />
-  <StatCard title="Your Flex balance" :value="flexBalance" :icon="icons.flex" class="flex-container"/>
-  <StatCard title="Sickleave" :value="sickLeave" :icon="icons.sick" />
-</div>
-
-<div class="middle-row">
-  <WeeklyChart
-    title="A month in good rhythm."
-    :subtitle="`Weekly creditable time · ${monthshow} ${yearshow}`"
-    :weeks="weeklyData"
-  />
-
-  <div class="right-col">
-    <div class="summary-card">
-
-      <h2 class="box-title">Your monthly summary</h2>
-      <div class="form-card-sub">
-        <h3 class="box-subtitle">{{ monthshow }} {{ yearshow }}</h3>
-        <StatusBadge variant="neutral" :label="currentTimesheet?.status || 'Draft'" />
-      </div>
-      
-      <div class="summary-subrow"></div>
-      <div class="summary-metrics">
-        <div class="metric-row"><span class="metric-lbl">Working Time</span><span class="metric-val">{{ workingTime }}</span></div>
-        <div class="metric-row"><span class="metric-lbl">Targettime · 22 × 8:00 h</span><span class="metric-val">176:00 h</span></div>
-      </div>
-      <div class="divider-line"></div>
-      <button @click="emit('navigate', 'time-tracking')" class="view-timesheet-link">View Timesheet →</button>
+    <div class="kpi-grid">
+      <StatCard class="wide" :title="`Working time in ${monthshow}`" :value="workingTime" :icon="icons.time" />
+      <StatCard highlighted title="Your flex balance" :value="flexBalance" :subtitle="flexSubtitle" :icon="icons.flex" />
+      <StatCard title="Sickleave" :value="sickLeave" :icon="icons.sick" />
     </div>
 
-    <div class="chart-box vacation-box">
-      <div>
-        <h2 class="box-title">Vacation overwiev</h2>
-        <p class="box-subtitle">Manage your vacation</p>
-      </div>
-      <div class="vacation-content">
-        <div class="vacation-info">
-          <span class="vacation-label">Available vacation days:</span>
-          <span class="vacation-value">{{ availableVacationDays }} days</span>
+    <div class="middle-row">
+      <WeeklyChart
+        title="A month in good rhythm."
+        :subtitle="`Weekly creditable time · ${monthshow} ${yearshow}`"
+        :weeks="weeklyData"
+      />
+
+      <div class="right-col">
+        <div class="summary-card">
+          <h2 class="box-title">Your monthly summary</h2>
+          <div class="form-card-sub">
+            <h3 class="box-subtitle">{{ monthshow }} {{ yearshow }}</h3>
+            <StatusBadge variant="neutral" :label="statusLabel" />
+          </div>
+
+          <div class="summary-subrow"></div>
+          <div class="summary-metrics">
+            <div class="metric-row">
+              <span class="metric-lbl">Working Time</span>
+              <span class="metric-val">{{ workingTime }}</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-lbl">Targettime · {{ targetDays }} × 8:00 h</span>
+              <span class="metric-val">{{ formatHours(monthTarget) }}</span>
+            </div>
+            <div class="metric-row">
+              <span class="metric-lbl">Flexchange{{ flexIsPending ? ' (pending)' : '' }}</span>
+              <span class="metric-val" :class="monthFlex >= 0 ? 'pos' : 'neg'">{{ formatHours(monthFlex, true) }}</span>
+            </div>
+          </div>
+          <div class="divider-line"></div>
+          <button @click="emit('navigate', 'time-tracking')" class="view-timesheet-link">View Timesheet →</button>
         </div>
-        <button @click="emit('navigate', 'vacation')" class="view-timesheet-link">To vacation overwiev →</button>
+
+        <div class="chart-box vacation-box">
+          <div>
+            <h2 class="box-title">Vacation overwiev</h2>
+            <p class="box-subtitle">Manage your vacation</p>
+          </div>
+          <div class="vacation-content">
+            <div class="vacation-info">
+              <span class="vacation-label">Available vacation days:</span>
+              <span class="vacation-value">{{ availableVacationDays }} days</span>
+            </div>
+            <button @click="emit('navigate', 'vacation')" class="view-timesheet-link">To vacation overwiev →</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
-</div>
- 
 </template>
 
 <style scoped>
@@ -277,7 +312,6 @@ onMounted(() => {
   margin: 0;
   max-width: 150px;
   text-align: left;
-  
 }
 
 .vacation-content {
@@ -317,7 +351,7 @@ onMounted(() => {
   flex-direction: column;
   justify-content: flex-start;
   align-items: flex-start;
-  gap: 24px;
+  gap: 16px;
   display: flex;
 }
 .top-row {
@@ -327,6 +361,7 @@ onMounted(() => {
   align-items: center;
   display: inline-flex;
   text-align: left;
+  margin-bottom: 8px;
 }
 .welcome-col {
   flex: 1 1 0;
@@ -359,9 +394,7 @@ onMounted(() => {
   display: inline-flex;
   gap: 16px;
 }
-.middle-row, .bottom-row {
-  gap: 24px;
-}
+.middle-row { flex-wrap: wrap; }
 .chart-box, .summary-card, .entries-box {
   background: white;
   border-radius: 12px;
@@ -378,19 +411,13 @@ onMounted(() => {
 .metric-row { display: flex; justify-content: space-between; }
 .metric-lbl { color: #697B80; font-size: 12px; }
 .metric-val { color: #172D32; font-size: 13px; font-weight: 600; }
+.metric-val.pos { color: #176A70; }
+.metric-val.neg { color: #C0392B; }
 .divider-line { height: 1px; background: #DFE7E8; width: 100%; }
 .view-timesheet-link { color: #176A70; font-size: 12px; font-weight: 600; background: none; border: none; cursor: pointer; text-align: left; padding: 0; }
-.kpi-grid .wide { flex: 1.4 1 0; }
-.right-col { width: 360px; flex: none; display: flex; flex-direction: column; gap: 24px; }
+.right-col { width: 360px; flex: none; display: flex; flex-direction: column; gap: 16px; }
 .right-col .summary-card { width: auto; }
 .right-col .vacation-box { flex: none; }
-.dashboard-container { gap: 16px; }             
-.top-row { margin-bottom: 8px; }                 
-.middle-row, .bottom-row { gap: 16px; }      
-.middle-row { flex-wrap: wrap; }    
-.right-col { gap: 16px; } 
 .weekly-chart { min-width: 480px; }
-.x-axis span { white-space: nowrap; }
-
 .form-card-sub { display: flex; justify-content: space-between; align-items: center; }
 </style>
