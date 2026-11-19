@@ -78,6 +78,10 @@ class TimesheetDataService {
     reject(id, supervisorId, reason) {
         return http.post(`/Timesheet-management/Timesheets/${id}/reject?supervisorId=${supervisorId}`, { reason });
     }
+
+    getTeamTimesheets(supervisorId, status) {
+    return http.get('/Timesheet-management/Timesheets/team', { params: { supervisorId, status } })
+    }
 }
 
 

@@ -5,6 +5,7 @@ import org.springframework.stereotype.Component;
 import de.hsesslingen.timetracking.dto.EmployeeRequestDTO;
 import de.hsesslingen.timetracking.dto.EmployeeResponseDTO;
 import de.hsesslingen.timetracking.model.Employee;
+import de.hsesslingen.timetracking.model.Supervisor;
 
 @Component
 public class EmployeeMapper {
@@ -38,25 +39,12 @@ public class EmployeeMapper {
         return dto;
     }
 
-    public Employee toEntity(EmployeeRequestDTO dto) {
+    public Employee toEntity(EmployeeRequestDTO dto, Supervisor supervisor) {
         if (dto == null) {
             return null;
         }
-
-        Employee employee = new Employee();
-        employee.setfirstname(dto.getFirstname());
-        employee.setlastname(dto.getLastname());
-        employee.setemail(dto.getEmail());
-        employee.setUsername(dto.getUsername());
-        employee.setPassword(dto.getPassword()); 
-        employee.setTargetH(dto.getTargetH());
-        
-        // Hier ggf. Supervisor/Department als Entity setzen, falls das Repository IDs erwartet
-        // (z.B. employee.setSupervisor(supervisorRepository.findById(dto.getSupervisor()).orElse(null)));
-
-
-
-        return employee;
+        return new Employee(dto.getFirstname(), dto.getLastname(), dto.getUsername(),
+                            dto.getEmail(), dto.getPassword(), dto.getTargetH(), supervisor);
     }
 
     public void updateEntityFromDTO(EmployeeRequestDTO dto, Employee employee) {

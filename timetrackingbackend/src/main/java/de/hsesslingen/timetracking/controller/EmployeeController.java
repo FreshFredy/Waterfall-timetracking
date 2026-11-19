@@ -29,7 +29,9 @@ import de.hsesslingen.timetracking.mapper.EmployeeMapper;
 import de.hsesslingen.timetracking.mapper.FlexAccountMapper;
 import de.hsesslingen.timetracking.mapper.VacationBalanceMapper;
 import de.hsesslingen.timetracking.model.Employee;
+import de.hsesslingen.timetracking.model.Supervisor;
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
+import de.hsesslingen.timetracking.repository.SupervisorRepository;
 
 
 @RestController
@@ -49,12 +51,16 @@ public class EmployeeController {
 	@Autowired
 	private FlexAccountMapper flexAccountMapper;
 
+    @Autowired 
+    private SupervisorRepository supervisorRepository;
+
     @GetMapping("/Employees")
-    public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees(@RequestParam(required = false) String email) {
+    public ResponseEntity<List<EmployeeResponseDTO>> getAllEmployees(@RequestParam(required = false) String email, @RequestParam(required = false) Long supervisorId) {
         try {
-            List<Employee> employees = (email == null) 
-                    ? employeeRepository.findAll() 
-                    : employeeRepository.findByemail(email);
+            List<Employee> employees =
+                supervisorId != null ? employeeRepository.findBySupervisorId(supervisorId)
+                : email != null        ? employeeRepository.findByemail(email)
+                :                        employeeRepository.findAll();
 
             if (employees.isEmpty()) {
                 return new ResponseEntity<>(HttpStatus.NO_CONTENT);
@@ -103,9 +109,9 @@ public class EmployeeController {
     @PostMapping("/Employees")
     public ResponseEntity<EmployeeResponseDTO> createEmployee(@RequestBody EmployeeRequestDTO requestDTO) {
         try {
-            // RequestDTO in Entity umwandeln und speichern
-            Employee newEmployee = employeeMapper.toEntity(requestDTO);
-            Employee savedEmployee = employeeRepository.save(newEmployee);
+            Supervisor supervisor = requestDTO.getSupervisor() == null ? null
+                    : supervisorRepository.findById(requestDTO.getSupervisor()).orElse(null);
+            Employee savedEmployee = employeeRepository.save(employeeMapper.toEntity(requestDTO, supervisor));
             
             // Gespeicherte Entity als ResponseDTO zurückgeben
             return new ResponseEntity<>(employeeMapper.toDTO(savedEmployee), HttpStatus.CREATED);

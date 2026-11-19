@@ -78,7 +78,7 @@ const previewRangeLabel = computed(() => {
   const start = parseLocalDate(form.value.startDate)
   const end = parseLocalDate(form.value.endDate)
   if (!start || !end || isNaN(start) || isNaN(end) || end < start) {
-    return 'Ungültiges Datum'
+    return 'Invalid Date'
   }
   const fmt = (d) =>
     d.toLocaleDateString('de-DE', { day: '2-digit', month: 'long', year: 'numeric' })
@@ -171,14 +171,14 @@ const handleSearch = async () => {
     <div class="sl-header">
       <span class="tagline">HUMAN RESOURCES</span>
       <h1 class="sl-title">Sickleave</h1>
-      <p class="sl-desc">Krankmeldung eines Mitarbeiters erstellen</p>
+      <p class="sl-desc">Create an employee sick leave notification</p>
     </div>
 
     <div class="sl-split">
       <!-- Left Card: Form -->
       <form class="record-form-card" @submit.prevent="handleSubmit">
         <div class="form-card-header">
-          <h2 class="box-title">Sickleave erstellen</h2>
+          <h2 class="box-title">Create sickleave</h2>
           <StatusBadge variant="neutral" label="Draft" />
         </div>
 
@@ -197,7 +197,7 @@ const handleSearch = async () => {
         <!-- Date inputs -->
         <div class="time-inputs-row">
           <label class="input-label flex-1">
-            Startdatum
+            Start date
             <input
               v-model="form.startDate"
               type="date"
@@ -207,7 +207,7 @@ const handleSearch = async () => {
           </label>
 
           <label class="input-label flex-1">
-            Enddatum
+            End Date
             <input
               v-model="form.endDate"
               type="date"
@@ -218,7 +218,7 @@ const handleSearch = async () => {
         </div>
 
         <p class="note-txt">
-          Start und Enddatum sind inkludiert (Wochenenden werden automatisch übersprungen)
+          Start and end dates are included (weekends are automatically skipped)
         </p>
 
         <div class="divider-line"></div>
@@ -240,20 +240,20 @@ const handleSearch = async () => {
       <div class="preview-card">
         <div class="preview-top-content">
           <div class="preview-header-texts">
-            <h2 class="box-title">Sickleave Vorschau</h2>
+            <h2 class="box-title">Sickleave preview</h2>
             <p class="box-subtitle">{{ previewRangeLabel }}</p>
           </div>
 
           <div class="preview-kpi-row">
             <div class="preview-kpi-box light">
-              <span class="pkpi-lbl">Abwesend</span>
+              <span class="pkpi-lbl">Absent</span>
               <span class="pkpi-val">{{ previewDays.length }} Tage</span>
             </div>
           </div>
         </div>
         <div>
           <div class="preview-table-header">
-            <span class="pth-date">Datum</span>
+            <span class="pth-date">Date</span>
           </div>
           <div v-for="day in previewDays" :key="day.getTime()" class="preview-table-row">
             <span class="ptr-date">
@@ -268,8 +268,8 @@ const handleSearch = async () => {
     <div class="history-table-card">
       <div class="hist-table-header">
         <div>
-          <h3 class="box-title">Krankheitstage abfragen</h3>
-          <p class="box-subtitle">Employee ID und optionalen Zeitraum eingeben</p>
+          <h3 class="box-title">Check days of illness</h3>
+          <p class="box-subtitle">Employee ID and enter optional time period</p>
         </div>
       </div>
 
@@ -288,7 +288,7 @@ const handleSearch = async () => {
 
           <!-- Zeitraum Von -->
           <label class="input-label" style="flex: 1; min-width: 150px;">
-            Von (optional)
+            From (optional)
             <input
               v-model="searchStartDate"
               type="date"
@@ -298,7 +298,7 @@ const handleSearch = async () => {
 
           <!-- Zeitraum Bis -->
           <label class="input-label" style="flex: 1; min-width: 150px;">
-            Bis (optional)
+            To (optional)
             <input
               v-model="searchEndDate"
               type="date"
@@ -307,15 +307,15 @@ const handleSearch = async () => {
           </label>
 
           <button type="submit" class="submit-btn search-btn">
-            Anzeigen
+            Display
           </button>
         </form>
 
         <!-- Zähler-Ergebnis -->
         <div v-if="searchedEmployee" class="result-display-box">
           <div class="preview-kpi-box light" style="max-width: 320px; margin-top: 20px;">
-            <span class="pkpi-lbl">Gesamte Krankheitstage (ID: {{ searchedEmployee }})</span>
-            <span class="pkpi-val">{{ searchedSickDaysCount }} Tage</span>
+            <span class="pkpi-lbl">Total days of illness(ID: {{ searchedEmployee }})</span>
+            <span class="pkpi-val">{{ searchedSickDaysCount }} Days</span>
           </div>
         </div>
       </div>
@@ -326,14 +326,14 @@ const handleSearch = async () => {
 
 <style scoped>
 .sl-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
-.sl-header { display: flex; flex-direction: column; gap: 7px; }
+.sl-header { display: flex; flex-direction: column; gap: 7px; text-align: left; }
 .tagline { color: #697B80; font-size: 11px; font-weight: 600; letter-spacing: 1.20px; }
 .sl-title { color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }
 .sl-desc { color: #697B80; font-size: 13px; line-height: 18.85px; }
 .sl-split { display: flex; gap: 24px; align-items: stretch; }
 .record-form-card { width: 432px; flex-shrink: 0; padding: 24px; background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; display: flex; flex-direction: column; gap: 18px; }
 .form-card-header { display: flex; justify-content: space-between; align-items: center; }
-.box-title { color: #172D32; font-size: 16px; font-weight: 600; margin: 0; }
+.box-title { color: #172D32; font-size: 16px; font-weight: 600; margin: 0; text-align: left;}
 .box-subtitle { color: #697B80; font-size: 12px; margin: 0; }
 .input-label { display: flex; flex-direction: column; gap: 7px; color: #172D32; font-size: 12px; }
 .flex-1 { flex: 1; min-width: 0; }

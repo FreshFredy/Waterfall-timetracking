@@ -80,7 +80,7 @@ const emit = defineEmits(['navigate', 'open-help', 'logout'])
             class="nav-text"
             :style="{ color: activeRoute === 'vacation' ? '#176A70' : '#697B80', fontWeight: activeRoute === 'vacation' ? '600' : '500' }"
           >
-            Urlaub
+            Vacation
           </div>
         </button>
 

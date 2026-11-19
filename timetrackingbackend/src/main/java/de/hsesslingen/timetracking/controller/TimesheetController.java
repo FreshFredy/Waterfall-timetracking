@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.dto.TimeentryRequestDTO;
 import de.hsesslingen.timetracking.dto.TimesheetDTO;
 import de.hsesslingen.timetracking.dto.TimesheetRejectDTO;
@@ -41,6 +42,12 @@ public class TimesheetController {
     @GetMapping("/Timesheets/{id}")
     public ResponseEntity<TimesheetDTO> getTimesheet(@PathVariable("id") long id) {
         return ResponseEntity.ok(timesheetService.getTimesheet(id));
+    }
+    @GetMapping("/Timesheets/team")
+    public ResponseEntity<List<TimesheetDTO>> getTeamTimesheets(
+            @RequestParam long supervisorId,
+            @RequestParam(required = false) TimesheetStatus status) {
+        return ResponseEntity.ok(timesheetService.getTimesheetsForSupervisor(supervisorId, status));
     }
 
     @PostMapping("/Timesheets/entries")

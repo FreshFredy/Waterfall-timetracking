@@ -281,25 +281,35 @@ const handleAddVacation = async () => {
     alert('Der Urlaubsantrag konnte nicht gespeichert werden.');
   }
 }
+
+const yearshow = computed(() => {
+  const date = (new Date().getFullYear() - 1);
+  return date.toLocaleString('en-US', { year: 'numeric' });
+})
 </script>
 
 <template>
   <div class="tt-container">
     <div class="tt-header-row">
-      <h1 class="tt-title">Urlaubsverwaltung</h1>
+      <div class="tt-heading">
+      <p class="tt-subtitle">TIME OFF & RECHARGE</p>
+      <h1 class="tt-title">Vacation management </h1>
+      <p class="tt-subtitle">Work hard, recharge smart. Keep an eye on your days off.</p>
+      </div>
       <div class="tt-actions">
         <div class="quota-pill">
-          <span>Resturlaub 2026:</span>
-          <strong>{{ remainingVacationDays }} Tage</strong>
+          <span>Remaining vacation days {{yearshow}}:</span>
+          <strong>{{remainingVacationDays}} {{ remainingVacationDays === 1 ? 'Day' : 'Days' }}
+          </strong>
         </div>
       </div>
     </div>
 
     <div class="tt-subbar">
       <div class="submitted-count">
-        <span>Genommen: <strong>{{ takenVacationDays }} Tage</strong></span>
+        <span>Taken: <strong>{{ takenVacationDays }} {{ takenVacationDays === 1 ? 'Day' : 'Days' }}</strong></span>
         <span>•</span>
-        <span>Geplant: <strong>{{ plannedVacationDays }} Tage</strong></span>
+        <span>Planned: <strong>{{ plannedVacationDays }} {{ plannedVacationDays === 1 ? 'Day' : 'Days' }}</strong></span>
       </div>
     </div>
 
@@ -307,23 +317,23 @@ const handleAddVacation = async () => {
       <div class="table-card">
         <div class="table-card-header">
           <div>
-            <h2 class="box-title">Meine Urlaubsanträge</h2>
+            <h2 class="box-title">My vacation requests</h2>
           </div>
         </div>
 
         <table class="data-table">
           <thead>
             <tr class="th-row">
-              <th class="th-date">Zeitraum</th>
-              <th class="th-days">Tage</th>
+              <th class="th-date">Period</th>
+              <th class="th-days">Days</th>
               <th class="th-status">Status</th>
-              <th class="th-action">Aktion</th>
+              <th class="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="vacationEntries.length === 0">
-              <td colspan="4" class="empty-state">
-                Noch keine Urlaubsanträge vorhanden.
+              <td colspan="4" class="empty-state">   
+                  No leave requests yet.
               </td>
             </tr>
             <tr v-else v-for="entry in vacationEntries" :key="entry.id" class="data-tr">
@@ -350,29 +360,29 @@ const handleAddVacation = async () => {
       <div class="right-sidebar">
         <form @submit.prevent="handleAddVacation" class="form-card">
           <div class="form-card-header">
-            <h2 class="box-title">Urlaub beantragen</h2>
+            <h2 class="box-title">Apply for vacation</h2>
           </div>
 
           <div class="time-inputs-row">
             <label class="input-label flex-1">
-              Von
+              From
               <input v-model="form.startDate" type="date" :min="minDate" class="text-input" required />
             </label>
             <label class="input-label flex-1">
-              Bis
+              To
               <input v-model="form.endDate" type="date" :min="form.startDate || minDate" class="text-input" required />
             </label>
           </div>
 
           <div class="calc-box">
             <div class="calc-header">
-              <span class="calc-val">Urlaubstage = {{ vacationStats.days }} {{ vacationStats.days === 1 ? 'Tag' : 'Tage' }}</span>
+              <span class="calc-val">Vacation duration: {{ vacationStats.days }} {{ vacationStats.days === 1 ? 'day' : 'days' }}</span>
             </div>
-            <div class="calc-sub">Wochenenden (Sa/So) werden automatisch abgezogen</div>
+            <div class="calc-sub">Weekends (Sat/Sun) are automatically deducted.</div>
           </div>
 
           <button type="submit" class="submit-btn">
-            <span>✓</span><span>Antrag einreichen</span>
+            <span>✓</span><span>Submit application</span>
           </button>
         </form>
       </div>
@@ -393,9 +403,22 @@ const handleAddVacation = async () => {
 
 .tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
 .tt-header-row { height: 143px; display: flex; align-items: center; gap: 24px; }
-.tt-title { flex: 1; color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }
+.tt-title {  color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; text-align: left;}
 .tt-actions { display: flex; align-items: center; gap: 12px; }
+.tt-subtitle { 
 
+  color: #697B80;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  line-height: 18.85px;
+  }
+.tt-heading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
 .quota-pill {
   height: 40px;
   padding: 0 16px;

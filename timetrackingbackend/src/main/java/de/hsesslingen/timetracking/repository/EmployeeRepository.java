@@ -9,6 +9,7 @@ import de.hsesslingen.timetracking.model.Employee;
 public interface EmployeeRepository extends JpaRepository<Employee, Long> {
   
   List<Employee> findByemail(String email);
+  List<Employee> findBySupervisorId(Long supervisorId);
   
   
 }

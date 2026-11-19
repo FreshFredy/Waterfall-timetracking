@@ -144,6 +144,16 @@ public class TimesheetService {
         "Your timesheet for " + sheet.getMonth() + "/" + sheet.getYear() + " was rejected: " + reason);
         return timesheetMapper.toDTO(sheet);
     }
+    @Transactional(readOnly = true)
+    public List<TimesheetDTO> getTimesheetsForSupervisor(long supervisorId, TimesheetStatus status) {
+        if (!supervisorRepository.existsById(supervisorId)) {
+            throw new NoSuchElementException("Supervisor " + supervisorId + " not found");
+        }
+        List<Timesheet> sheets = status == null
+            ? timesheetRepository.findByEmployeeSupervisorIdOrderByYearDescMonthDesc(supervisorId)
+            : timesheetRepository.findByEmployeeSupervisorIdAndStatusOrderByYearDescMonthDesc(supervisorId, status);
+        return sheets.stream().map(timesheetMapper::toDTO).toList();
+    }
 
     // ---------- helpers ----------
 

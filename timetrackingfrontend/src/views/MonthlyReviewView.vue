@@ -14,7 +14,8 @@ const props = defineProps({
   pendingReviewsCount: { type: Number },
   employeeId: { type: Number }
 })
-
+const errorText = (error) =>
+  error.response?.data?.error || error.response?.data?.message || error.message || 'Unbekannter Fehler'
 const pendingRequests = ref([])
 const submittedTimesheets = ref([])
 const rejectionReasons = ref({})
@@ -45,17 +46,15 @@ const calculateWorkDays = (startStr, endStr) => {
 
 // Hilfsfunktion zur Ermittlung der gültigen Supervisor-ID
 const getSupervisorId = async () => {
-    let currentSupervisorId = props.employeeId;
-    if (!currentSupervisorId && props.user && props.user.email) {
+    if (props.user?.id) return props.user.id;
+    if (props.employeeId) return props.employeeId;
+    if (props.user?.email) {
         const employeesResponse = await EmployeeService.getAll(props.user.email);
         if (employeesResponse.data && employeesResponse.data.length > 0) {
-            currentSupervisorId = employeesResponse.data[0].id;
+            return employeesResponse.data[0].id;
         }
     }
-    if (!currentSupervisorId && props.user && props.user.id) {
-        currentSupervisorId = props.user.id;
-    }
-    return currentSupervisorId;
+    return null;
 }
 
 // 1. Ausstehende Urlaubsanträge abrufen
@@ -115,52 +114,43 @@ const fetchPendingRequests = async () => {
 // 2. Eingereichte Timesheets abrufen
 const fetchSubmittedTimesheets = async () => {
     try {
-        const employeesResponse = await EmployeeService.getAll();
-        const employees = employeesResponse.data || [];
-        let allSubmitted = [];
+        const supervisorId = await getSupervisorId();
+        if (!supervisorId) return;
 
-        for (const emp of employees) {
+        // nur eingereichte Timesheets der eigenen Mitarbeiter
+        const response = await timesheetService.getTeamTimesheets(supervisorId, 'SUBMITTED');
+        const timesheets = response.data || [];
+
+        // Namen: eine Anfrage pro Mitarbeiter, nicht pro Timesheet
+        const names = {};
+        const ids = [...new Set(timesheets.map(ts => ts.employeeId))];
+        await Promise.all(ids.map(async (id) => {
             try {
-                const tsResponse = await timesheetService.getTimesheets(emp.id);
-                const timesheets = tsResponse.data || [];
-
-                const submitted = timesheets.filter(ts => {
-                    const status = (ts.status || '').toUpperCase();
-                    return status === 'SUBMITTED' || status === 'EINGEREICHT';
-                });
-
-                for (const ts of submitted) {
-                    const firstname = emp.firstname || emp.firstName || '';
-                    const lastname = emp.lastname || emp.lastName || '';
-                    const empName = (firstname || lastname) ? `${firstname} ${lastname}`.trim() : `Mitarbeiter ID: ${emp.id}`;
-
-                    let totalMins = 0;
-                    if (ts.timeEntries) {
-                        ts.timeEntries.forEach(entry => {
-                            totalMins += Math.round((entry.creditedHours || 0) * 60);
-                        });
-                    }
-                    const h = Math.floor(totalMins / 60);
-                    const m = String(totalMins % 60).padStart(2, '0');
-
-                    allSubmitted.push({
-                        id: ts.id,
-                        employeeId: emp.id,
-                        employeeName: `${empName} (ID: ${emp.id})`,
-                        period: `${ts.month || '–'}.${ts.year || '–'}`,
-                        status: ts.status || 'Submitted',
-                        totalHours: `${h}:${m}`,
-                        rawTimesheet: ts
-                    });
-                }
+                const e = (await EmployeeService.get(id)).data;
+                const full = `${e.firstname || e.firstName || ''} ${e.lastname || e.lastName || ''}`.trim();
+                names[id] = full || `Mitarbeiter ID: ${id}`;
             } catch (err) {
-                // Einzelne Fehler überspringen
+                names[id] = `Mitarbeiter ID: ${id}`;
             }
-        }
+        }));
 
-        submittedTimesheets.value = allSubmitted;
+        submittedTimesheets.value = timesheets.map(ts => {
+            const totalMins = Math.round((ts.workedHours || 0) * 60);
+            const h = Math.floor(totalMins / 60);
+            const m = String(totalMins % 60).padStart(2, '0');
+            return {
+                id: ts.id,
+                employeeId: ts.employeeId,
+                employeeName: `${names[ts.employeeId]} (ID: ${ts.employeeId})`,
+                period: `${ts.month || '–'}.${ts.year || '–'}`,
+                status: ts.status || 'Submitted',
+                totalHours: `${h}:${m}`,
+                rawTimesheet: ts
+            };
+        });
     } catch (error) {
         console.error("Fehler beim Laden der eingereichten Timesheets:", error);
+        submittedTimesheets.value = [];
     }
 }
 
@@ -198,7 +188,7 @@ const handleApproveTimesheet = async (timesheetId) => {
     await fetchSubmittedTimesheets();
   } catch (error) {
     console.error("Fehler beim Genehmigen des Timesheets:", error);
-    const msg = error.response?.data?.message || error.message || 'Unbekannter Fehler';
+    const msg = errorText(error);
     alert(`Timesheet konnte nicht genehmigt werden: ${msg}`);
   }
 }
@@ -225,7 +215,7 @@ const handleRejectTimesheet = async (timesheetId) => {
     await fetchSubmittedTimesheets();
   } catch (error) {
     console.error("Fehler beim Ablehnen des Timesheets:", error);
-    const msg = error.response?.data?.message || error.message || 'Unbekannter Fehler';
+    const msg = errorText(error);
     alert(`Timesheet konnte nicht abgelehnt werden: ${msg}`);
   }
 }

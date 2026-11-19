@@ -290,7 +290,11 @@ onMounted(() => {
 <template>
   <div class="tt-container">
     <div class="tt-header-row">
-      <h1 class="tt-title">Zeiterfassung</h1>
+      <div class="tt-heading">
+        <p class="tt-subtitle">YOUR WORKDAY LOG</p>
+      <h1 class="tt-title">Time tracking</h1>
+      <p class="tt-subtitle">Log your hours effortlessly. Stay on top of your day.</p>
+      </div>
       <div class="tt-actions">
         <!-- Aktivierter Submit-Button -->
         <button 
@@ -299,7 +303,7 @@ onMounted(() => {
           class="submit-timesheet-btn" 
           :disabled="isSubmitting"
         >
-          <span>{{ isSubmitting ? 'Wird eingereicht...' : 'Submit Timesheet' }}</span>
+          <span>{{ isSubmitting ? 'Being submitted...' : 'Submit Timesheet' }}</span>
         </button>
         <button v-else class="disabled-submit-btn" disabled>
           <span>Submit Timesheet</span>
@@ -335,28 +339,28 @@ onMounted(() => {
               <button @click="changeYear(1)" class="nav-btn" title="Nächstes Jahr">»</button>
             </div>
 
-            <button @click="resetToToday" class="today-btn">Heute</button>
+            <button @click="resetToToday" class="today-btn">Today</button>
           </div>
         </div>
 
         <table class="data-table">
           <thead>
             <tr class="th-row">
-              <th class="th-date">Datum</th>
+              <th class="th-date">Date</th>
               <th class="th-start">Start</th>
-              <th class="th-end">Ende</th>
+              <th class="th-end">End</th>
               <th class="th-break">Pause</th>
-              <th class="th-type">Typ</th>
-              <th class="th-net">Arbeitszeit</th>
-              <th class="th-action">Aktion</th>
+              <th class="th-type">Type</th>
+              <th class="th-net">Working hours</th>
+              <th class="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="7" class="empty-state">Lade Zeiteinträge...</td>
+              <td colspan="7" class="empty-state">Load time entries...</td>
             </tr>
             <tr v-else-if="dailyEntries.length === 0">
-              <td colspan="7" class="empty-state">Keine Einträge für diesen Monat vorhanden.</td>
+              <td colspan="7" class="empty-state">No entries available for this month.</td>
             </tr>
             <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr" :class="{ 'editing-row': editingEntryId === entry.id }">
               <td class="td-date">{{ entry.date }}</td>
@@ -367,7 +371,7 @@ onMounted(() => {
               <td class="td-net-val">{{ entry.net }}</td>
               <td class="td-action">
                 <button @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
-                  Bearbeiten
+                  Edit
                 </button>
               </td>
             </tr>
@@ -383,12 +387,12 @@ onMounted(() => {
           </div>
 
           <div v-if="isEditing" class="edit-banner">
-            <span>Bearbeite Eintrag</span>
-            <button type="button" @click="cancelEdit" class="cancel-edit-text">Abbrechen</button>
+            <span>Edit Entry</span>
+            <button type="button" @click="cancelEdit" class="cancel-edit-text">Cancel</button>
           </div>
 
           <label class="input-label">
-            Datum
+            Date
             <input v-model="form.date" type="date" class="text-input" required />
           </label>
 
@@ -398,29 +402,29 @@ onMounted(() => {
               <input v-model="form.start" type="time" class="text-input" required />
             </label>
             <label class="input-label flex-1">
-              Ende
+              End
               <input v-model="form.end" type="time" class="text-input" required />
             </label>
           </div>
 
           <label class="input-label">
-            Pausenzeit in Minuten
+            Break duration in minutes
             <input v-model.number="form.breakMinutes" type="number" min="0" step="5" class="text-input" />
           </label>
 
           <div class="calc-box">
             <div class="calc-header">
-              <span class="calc-val">Arbeitszeit = {{ timeStats.net }}</span>
+              <span class="calc-val">Working hours : {{ timeStats.net }}</span>
             </div>
-            <div class="calc-sub">Komplette Zeit - Pausen = Arbeitszeit</div>
+            <div class="calc-sub">Total time - break = Working hours</div>
           </div>
 
           <div class="form-actions-row">
             <button v-if="isEditing" type="button" @click="cancelEdit" class="cancel-btn">
-              Abbrechen
+              Cancel
             </button>
             <button type="submit" class="submit-btn" :class="{ 'update-btn': isEditing }">
-              <span>✓</span><span>{{ isEditing ? 'Änderungen speichern' : 'Zeit einreichen' }}</span>
+              <span>✓</span><span>{{ isEditing ? 'Save changes' : 'Submit time' }}</span>
             </button>
           </div>
         </form>
@@ -475,7 +479,7 @@ onMounted(() => {
 }
 .tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
 .tt-header-row { height: 143px; display: flex; align-items: center; gap: 24px; }
-.tt-title { flex: 1; color: #172D32; font-size: 30px; font-weight: 600; line-height: 36px; }
+
 .tt-actions { display: flex; align-items: center; gap: 12px; }
 .disabled-submit-btn { height: 40px; padding: 0 14px; background: #B3B3B3; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; border: none; cursor: not-allowed; }
 .submit-timesheet-btn { height: 40px; padding: 0 16px; background: #176A70; border-radius: 8px; color: white; font-size: 13px; font-weight: 600; display: flex; align-items: center; border: none; cursor: pointer; transition: background 0.2s; }
@@ -606,4 +610,27 @@ onMounted(() => {
 
 .error-banner { padding: 12px 16px; background: #FEE2E2; color: #991B1B; border-radius: 8px; font-size: 13px; }
 .success-banner { padding: 12px 16px; background: #D1FAE5; color: #065F46; border-radius: 8px; font-size: 13px; }
+
+.tt-title { 
+
+  color: 
+  #172D32; 
+  font-size: 30px; 
+  font-weight: 600; 
+  line-height: 36px; 
+}
+.tt-subtitle { 
+  color: #697B80;
+  font-size: 13px;
+  font-family: Inter, sans-serif;
+  line-height: 18.85px;
+}
+.tt-heading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
 </style>
