@@ -15,6 +15,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+
 import jakarta.persistence.Table;
 
 
@@ -49,36 +50,48 @@ public class Timeentry {
 
     @Column(name = "creditedHours")
     private float creditedHours;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id") 
+    private Project project;
  
     public Timeentry() {
 
     }
 
-    public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, TimeEntryType entryType) {
+    public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, TimeEntryType entryType, Project project) {
         this.entryDate = entryDate;
         this.startDate = startDate;
         this.endDate = endDate;
         this.breakDuration = breakDuration;
         this.entry_type = entryType;
+        this.project = project;
         calculateCreditedHours();
     }
 
-public void calculateCreditedHours() {
-    if (entry_type == TimeEntryType.SICK) {
-        this.creditedHours = 8;
-        return;
-    }
-    if (entry_type == TimeEntryType.FLEXTIME) {
-        this.creditedHours = 0;          // a flex day off credits nothing, the target makes it a minus
-        return;
-    }
-    if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
-        throw new IllegalArgumentException("End time must be after start time");
-    }
-    if (breakDuration == null) breakDuration = 0;
-    long minutes = Duration.between(startDate, endDate).toMinutes() - breakDuration;
-    this.creditedHours = minutes / 60f;
-}
+    public void calculateCreditedHours() {
+        if (entry_type == TimeEntryType.SICK) {
+            this.creditedHours = 8;
+            return;
+        }
+        if (entry_type == TimeEntryType.FLEXTIME) {
+            this.creditedHours = 0;          // a flex day off credits nothing, the target makes it a minus
+            
+            return;
+        }
+        if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+            throw new IllegalArgumentException("End time must be after start time");
+        }
+        if ((6 <= Duration.between(startDate, endDate).toMinutes()/60f && Duration.between(startDate, endDate).toMinutes()/60f <= 9) && breakDuration < 30) {
+            throw new IllegalArgumentException("Violated Break Time");
+        }
+        if ((9 <= Duration.between(startDate, endDate).toMinutes()/60f && Duration.between(startDate, endDate).toMinutes()/60f <= 10) && breakDuration < 45) {
+            throw new IllegalArgumentException("Violated Break Time");
+        }
+        if (breakDuration == null) breakDuration = 0;
+        long minutes = Duration.between(startDate, endDate).toMinutes() - breakDuration;
+        this.creditedHours = minutes / 60f;
+    }   
 
     public long getId() {
         return id;
@@ -86,39 +99,45 @@ public void calculateCreditedHours() {
 
    public LocalDate getEntryDate(){
         return entryDate;
-   }
+    }
     public LocalTime getStartDate(){
         return startDate;
-   }
+    }
     public LocalTime getEndDate(){
         return endDate;
-   }
+    }
     public Integer getbreakDuration(){
         return breakDuration;
-   }
+    }
 
     public TimeEntryType getEntry_type(){
         return entry_type;
-   }
+    }
     public Timesheet getTimesheet(){
         return timesheet;
-   }
+    }
     public void setTimesheet(Timesheet timesheetID){
         this.timesheet = timesheetID;
-   }
+    }
     public float getCreditedHours(){
         return creditedHours;
-   }
-   public void update(LocalDate entryDate, LocalTime startDate, LocalTime endDate,
-                   Integer breakDuration, TimeEntryType entryType) {
+    }
+    public Project getProject(){
+        return project;
+    }
+    public void setProject(Project project){
+        this.project = project;
+    }
+    public void update(LocalDate entryDate, LocalTime startDate, LocalTime endDate,
+                   Integer breakDuration, TimeEntryType entryType, Project project) {
     this.entryDate = entryDate;
     this.startDate = startDate;
     this.endDate = endDate;
     this.breakDuration = breakDuration;
     this.entry_type = entryType;
+    this.project = project;
     calculateCreditedHours();
-}
-
+    }
 
     @Override
     public String toString() {

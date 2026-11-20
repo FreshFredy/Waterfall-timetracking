@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import de.hsesslingen.timetracking.EntryTypes.TimeEntryType;
 
+
 public record TimeentryResponseDTO(
     long id,
     LocalDate entryDate,
@@ -11,5 +12,7 @@ public record TimeentryResponseDTO(
     LocalTime endTime,
     Integer breakMinutes,
     TimeEntryType entryType,
-    float creditedHours
+    float creditedHours,
+    Long projectId,
+    String projectName
 ) {}

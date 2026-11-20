@@ -82,6 +82,10 @@ class TimesheetDataService {
     getTeamTimesheets(supervisorId, status) {
     return http.get('/Timesheet-management/Timesheets/team', { params: { supervisorId, status } })
     }
+    projectService(projectId){
+        return http.get('/projects/');
+    }
+    
 }
 
 
@@ -169,3 +173,6 @@ export const vacationRequestService = new VacationRequestDataService();
 export const sickLeaveService = new SickLeaveDataService();
 export const timesheetService = new TimesheetDataService();
 export default new EmployeeDataService();
+export const projectService = {
+  getAll: () => http.get('/Project-Management'),
+}

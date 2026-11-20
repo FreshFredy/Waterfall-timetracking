@@ -11,6 +11,7 @@ import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.dto.TimeentryRequestDTO;
 import de.hsesslingen.timetracking.dto.TimesheetDTO;
 
+
 import de.hsesslingen.timetracking.mapper.TimeentryMapper;
 import de.hsesslingen.timetracking.mapper.TimesheetMapper;
 
@@ -18,10 +19,14 @@ import de.hsesslingen.timetracking.model.Employee;
 import de.hsesslingen.timetracking.model.Supervisor;
 import de.hsesslingen.timetracking.model.Timeentry;
 import de.hsesslingen.timetracking.model.Timesheet;
+import de.hsesslingen.timetracking.model.Project;
 
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 import de.hsesslingen.timetracking.repository.SupervisorRepository;
 import de.hsesslingen.timetracking.repository.TimesheetRepository;
+
+
+
 
 @Service
 public class TimesheetService {
@@ -32,19 +37,22 @@ public class TimesheetService {
     private final TimesheetMapper timesheetMapper;
     private final TimeentryMapper timeentryMapper;
     private final NotificationService notificationService;
+    private final ProjectService projectService;
 
     public TimesheetService(TimesheetRepository timesheetRepository,
                             EmployeeRepository employeeRepository,
                             SupervisorRepository supervisorRepository,
                             TimesheetMapper timesheetMapper,
                             TimeentryMapper timeentryMapper,
-                        NotificationService notificationMapper) {
+                        NotificationService notificationMapper,
+                        ProjectService projectService) {
         this.timesheetRepository = timesheetRepository;
         this.employeeRepository = employeeRepository;
         this.supervisorRepository = supervisorRepository;
         this.timesheetMapper = timesheetMapper;
         this.timeentryMapper = timeentryMapper;
         this.notificationService = notificationMapper;
+        this.projectService = projectService;
     }
 
     // ---------- read ----------
@@ -82,8 +90,8 @@ public class TimesheetService {
                     employee.addTimesheet(t);
                     return t;
                 });
-
-        sheet.addEntry(timeentryMapper.toEntity(dto));   // checks status and month, sets entry.timesheet
+        Project project = resolveProject(dto.projectID());
+        sheet.addEntry(timeentryMapper.toEntity(dto, project));   // checks status and month, sets entry.timesheet
         return timesheetMapper.toDTO(timesheetRepository.save(sheet));
     }
 
@@ -102,8 +110,8 @@ public class TimesheetService {
         if (entry.getEntry_type() == TimeEntryType.SICK) {
             throw new IllegalStateException("Sick entries are managed by HR");
         }
-
-        timeentryMapper.updateEntityFromDTO(dto, entry);   // recalculates creditedHours
+        System.out.println("projectId aus Request: " + dto.projectID());
+        timeentryMapper.updateEntityFromDTO(dto, entry, resolveProject(dto.projectID()));   // recalculates creditedHours
         return timesheetMapper.toDTO(sheet);               // no save() needed: the entity is managed
     }
 
@@ -173,12 +181,16 @@ public class TimesheetService {
     }
 
     private void validate(TimeentryRequestDTO dto) {
-        if (dto == null || dto.entryDate() == null || dto.entryType() == null) {
+        if (dto == null || dto.entryDate() == null || dto.entryType() == null ) {
             throw new IllegalArgumentException("entryDate and entryType are required");
         }
         if (dto.entryType() == TimeEntryType.SICK) {
             throw new IllegalArgumentException("Sick days are recorded by HR, not as work time");
         }
     }
+
+    private Project resolveProject(Long projectId) {
+        return projectId == null ? null : projectService.getById(projectId);
+    }   
 
 }

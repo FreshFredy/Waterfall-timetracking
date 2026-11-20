@@ -23,19 +23,22 @@ public class SickLeaveService {
     private final SickLeaveRepository sickLeaveRepository;
     private final SickLeaveMapper sickLeaveMapper;
     private final NotificationService notificationService;
+    
 
     public SickLeaveService(EmployeeRepository employeeRepository,
                             TimesheetRepository timesheetRepository,
                             TimeentryRepository timeentryRepository,
                             SickLeaveRepository sickLeaveRepository,
                             SickLeaveMapper sickLeaveMapper,
-                            NotificationService notificationService) {
+                            NotificationService notificationService
+                    ) {
         this.employeeRepository = employeeRepository;
         this.timesheetRepository = timesheetRepository;
         this.timeentryRepository = timeentryRepository;
         this.sickLeaveRepository = sickLeaveRepository;
         this.sickLeaveMapper = sickLeaveMapper;
         this.notificationService = notificationService;
+        
     }
 @Transactional(readOnly = true)
 public SickLeaveResponseDTO getSickLeave(long id) {
@@ -76,7 +79,7 @@ public SickLeaveResponseDTO recordSickLeave(long hrId, SickLeaveDTO dto) {
                 return timesheetRepository.save(t);
             });
 
-    Timeentry entry = new Timeentry(dto.day(), null, null, 0, TimeEntryType.SICK);
+    Timeentry entry = new Timeentry(dto.day(), null, null, 0, TimeEntryType.SICK, null);
     sheet.addEntry(entry);
     timeentryRepository.save(entry);
 

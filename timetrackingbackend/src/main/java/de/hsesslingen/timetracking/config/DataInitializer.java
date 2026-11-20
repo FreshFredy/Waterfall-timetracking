@@ -188,7 +188,7 @@ public class DataInitializer implements CommandLineRunner {
         for (LocalDate date : sortedDays) {
             TimeEntryType type = dayTypes.get(date);
             if (type == TimeEntryType.SICK) {
-                sickTimeEntry = new Timeentry(date, null, null, 0, TimeEntryType.SICK);
+                sickTimeEntry = new Timeentry(date, null, null, 0, TimeEntryType.SICK, null);
                 sheet.addEntry(sickTimeEntry);
             } else if (date.equals(tenHourDay)) {
                 // 10.0 Stunden: 08:00 - 18:30 abzgl. 30 Min Pause = 600 Min = 10.0h
@@ -197,7 +197,8 @@ public class DataInitializer implements CommandLineRunner {
                     LocalTime.of(8, 0),
                     LocalTime.of(18, 30),
                     30,
-                    TimeEntryType.WORK
+                    TimeEntryType.WORK,
+                    null
                 );
                 sheet.addEntry(longWorkEntry);
             } else {
@@ -207,7 +208,8 @@ public class DataInitializer implements CommandLineRunner {
                     LocalTime.of(8, 0),
                     LocalTime.of(16, 30),
                     30,
-                    TimeEntryType.WORK
+                    TimeEntryType.WORK  
+                    ,null
                 );
                 sheet.addEntry(workEntry);
             }

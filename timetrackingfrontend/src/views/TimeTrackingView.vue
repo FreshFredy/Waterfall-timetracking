@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed, onMounted, watch } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
-import { timesheetService } from '../services/api.js'
+import { timesheetService, projectService } from '../services/api.js'
 import EmployeeService from '../services/api.js'
 
 const props = defineProps({
@@ -36,6 +36,7 @@ const form = ref({
   end: '17:00',
   breakMinutes: 30,
   entryType: 'WORK',
+  projectId: null
 })
 
 // Editier-State
@@ -48,6 +49,7 @@ const selectedDate = ref(new Date())
 // Daten vom Backend
 const currentTimesheet = ref(null)
 const dailyEntries = ref([])
+const projects = ref([])
 const isLoading = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
@@ -89,8 +91,18 @@ const formattedPeriod = computed(() => {
 const canSubmitTimesheet = computed(() => {
   if (!currentTimesheet.value || !currentTimesheet.value.id) return false
   const status = currentTimesheet.value.status ? currentTimesheet.value.status.toUpperCase() : 'DRAFT'
-  return status === 'DRAFT' || status === 'OPEN' || status === 'APPROACHED'
+  return status === 'DRAFT' || status === 'OPEN' || status === 'APPROACHED' || status === 'REJECTED'
 })
+
+// Projekte für das Dropdown laden (GET /projects)
+const loadProjects = async () => {
+  try {
+    const response = await projectService.getAll()
+    projects.value = response.data
+  } catch (err) {
+    console.error('Projekte konnten nicht geladen werden:', err)
+  }
+}
 
 // 1. Timesheet und Einträge vom Backend laden (GET)
 const fetchTimesheetData = async () => {
@@ -166,6 +178,8 @@ const mapBackendEntryToRow = (entry) => {
     breakMinutes: breakMins,
     break: breakMins > 0 ? formatMinutes(breakMins) : '0:00',
     net: `${netMinsFormatted}`,
+    project: entry.projectName ?? '–',      // Anzeige in der Tabelle
+    rawProjectId: entry.projectId ?? null,  // fürs Bearbeiten / Dropdown
     type: displayType,
     rawType: rawType
   }
@@ -182,7 +196,8 @@ const handleEditClick = (entry) => {
     start: entry.start !== '–' ? entry.start : '08:30',
     end: entry.end !== '–' ? entry.end : '17:00',
     breakMinutes: entry.breakMinutes,
-    entryType: entry.rawType || 'WORK'
+    entryType: entry.rawType || 'WORK',
+    projectId: entry.rawProjectId
   }
 }
 
@@ -197,6 +212,7 @@ const cancelEdit = () => {
     end: '17:00',
     breakMinutes: 30,
     entryType: 'WORK',
+    projectId: null
   }
 }
 
@@ -219,7 +235,8 @@ const handleFormSubmit = async () => {
     startTime: form.value.start.length === 5 ? `${form.value.start}:00` : form.value.start,    
     endTime: form.value.end.length === 5 ? `${form.value.end}:00` : form.value.end,        
     breakMinutes: form.value.breakMinutes,  
-    entryType: form.value.entryType 
+    entryType: form.value.entryType,
+    projectID: form.value.projectId ?? null
   }
 
   try {
@@ -283,6 +300,7 @@ watch(selectedDate, () => {
 })
 
 onMounted(() => {
+  loadProjects()
   fetchTimesheetData()
 })
 </script>
@@ -352,23 +370,25 @@ onMounted(() => {
               <th class="th-break">Pause</th>
               <th class="th-type">Type</th>
               <th class="th-net">Working hours</th>
+              <th class="th-project">Project</th>
               <th class="th-action">Action</th>
             </tr>
           </thead>
           <tbody>
             <tr v-if="isLoading">
-              <td colspan="7" class="empty-state">Load time entries...</td>
+              <td colspan="8" class="empty-state">Load time entries...</td>
             </tr>
             <tr v-else-if="dailyEntries.length === 0">
-              <td colspan="7" class="empty-state">No entries available for this month.</td>
+              <td colspan="8" class="empty-state">No entries available for this month.</td>
             </tr>
             <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr" :class="{ 'editing-row': editingEntryId === entry.id }">
-              <td class="td-date">{{ entry.date }}</td>
+              <td class="td-date"><span class="project-text">{{ entry.date }}</span></td>
               <td>{{ entry.start }}</td>
               <td>{{ entry.end }}</td>
               <td>{{ entry.break }}</td>
               <td>{{ entry.type }}</td>
               <td class="td-net-val">{{ entry.net }}</td>
+              <td class="td-project-val"><span class="project-text">{{ entry.project }}</span></td>
               <td class="td-action">
                 <button @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
                   Edit
@@ -382,7 +402,7 @@ onMounted(() => {
       <div class="right-sidebar">
         <form @submit.prevent="handleFormSubmit" class="form-card" :class="{ 'edit-mode-border': isEditing }">
           <div class="form-card-header">
-            <h2 class="box-title">{{ isEditing ? 'Eintrag bearbeiten' : 'Time tracking' }}</h2>
+            <h2 class="box-title">{{ isEditing ? 'Edit entrie' : 'Time tracking' }}</h2>
             <StatusBadge variant="neutral" :label="currentTimesheet?.status || 'Draft'" />
           </div>
 
@@ -418,6 +438,14 @@ onMounted(() => {
             </div>
             <div class="calc-sub">Total time - break = Working hours</div>
           </div>
+
+          <label class="input-label">
+            Project
+            <select v-model="form.projectId" class="select-input">
+              <option :value="null">– No project –</option>
+              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+            </select>
+          </label>
 
           <div class="form-actions-row">
             <button v-if="isEditing" type="button" @click="cancelEdit" class="cancel-btn">
@@ -486,15 +514,27 @@ onMounted(() => {
 .submit-timesheet-btn:hover { background: #0F4C50; }
 .submit-timesheet-btn:disabled { background: #B3B3B3; cursor: not-allowed; }
 
-.content-split { display: flex; gap: 24px; }
-.table-card { flex: 1; background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; display: flex; flex-direction: column; overflow: hidden; }
+.content-split { display: flex; gap: 24px;  }
+.table-card { flex: 1; 
+  background: white; 
+  border-radius: 12px; 
+  outline: 1px #DFE7E8 solid; 
+  display: flex; 
+  flex-direction: column;
+    align-items: center;
+  overflow: hidden; 
+  text-align: center;
+  
+}
 
 .table-card-header { 
   padding: 20px; 
   display: flex; 
   justify-content: space-between; 
+  flex-direction: column;
   align-items: center; 
   flex-wrap: wrap;
+  text-align: left;
   gap: 12px;
 }
 
@@ -560,8 +600,8 @@ onMounted(() => {
 }
 
 .box-title { color: #172D32; font-size: 16px; font-weight: 600; }
-.data-table { width: 100%; border-collapse: collapse; text-align: left; }
-.th-row { height: 36px; background: #F8FAFA; border-top: 1px #DFE7E8 solid; border-bottom: 1px #DFE7E8 solid; color: #697B80; font-size: 10px; font-weight: 600; }
+
+
 .th-date { padding-left: 20px; width: 120px; }
 .th-start, .th-end, .th-break, .th-type { width: 75px; }
 .th-net { width: 90px; }
@@ -638,6 +678,34 @@ onMounted(() => {
   flex-direction: column;
   gap: 4px;
   text-align: left;
+}
+.td-project-val{
+  width: 100px;
+  text-align:center;
+}
+.th-row { 
+  height: 36px; 
+  background: #F8FAFA; 
+  border-top: 1px #DFE7E8 solid; 
+  border-bottom: 1px #DFE7E8 solid; 
+  color: #697B80; 
+  font-size: 10px; 
+  font-weight: 600; 
+}
+.data-table { 
+  width: 100%; 
+  border-collapse: collapse; 
+  text-align: center; 
+}
+.project-text {
+  display: block;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+td{
+  text-align: center;
 }
 
 </style>
