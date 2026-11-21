@@ -67,6 +67,8 @@ public class Timeentry {
         this.entry_type = entryType;
         this.project = project;
         calculateCreditedHours();
+        if(this.project == null) throw new IllegalArgumentException("You need to enter a Project");
+        calculateCreditedHours();
     }
 
 public void calculateCreditedHours() {

@@ -1,7 +1,10 @@
 package de.hsesslingen.timetracking.service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.time.Duration;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,6 +26,7 @@ import de.hsesslingen.timetracking.model.Project;
 
 import de.hsesslingen.timetracking.repository.EmployeeRepository;
 import de.hsesslingen.timetracking.repository.SupervisorRepository;
+import de.hsesslingen.timetracking.repository.TimeentryRepository;
 import de.hsesslingen.timetracking.repository.TimesheetRepository;
 
 
@@ -38,6 +42,8 @@ public class TimesheetService {
     private final TimeentryMapper timeentryMapper;
     private final NotificationService notificationService;
     private final ProjectService projectService;
+    private final TimeentryRepository timeentryRepository;
+
 
     public TimesheetService(TimesheetRepository timesheetRepository,
                             EmployeeRepository employeeRepository,
@@ -45,7 +51,8 @@ public class TimesheetService {
                             TimesheetMapper timesheetMapper,
                             TimeentryMapper timeentryMapper,
                         NotificationService notificationMapper,
-                        ProjectService projectService) {
+                        ProjectService projectService,
+                        TimeentryRepository timeentryRepository) {
         this.timesheetRepository = timesheetRepository;
         this.employeeRepository = employeeRepository;
         this.supervisorRepository = supervisorRepository;
@@ -53,6 +60,7 @@ public class TimesheetService {
         this.timeentryMapper = timeentryMapper;
         this.notificationService = notificationMapper;
         this.projectService = projectService;
+        this.timeentryRepository = timeentryRepository;
     }
 
     // ---------- read ----------
@@ -91,7 +99,9 @@ public class TimesheetService {
                     return t;
                 });
         Project project = resolveProject(dto.projectID());
-        sheet.addEntry(timeentryMapper.toEntity(dto, project));   // checks status and month, sets entry.timesheet
+        Timeentry entry = timeentryMapper.toEntity(dto, project); 
+        checkRestPeriod(employeeId, entry);
+        sheet.addEntry(entry);  
         return timesheetMapper.toDTO(timesheetRepository.save(sheet));
     }
 
@@ -110,8 +120,8 @@ public class TimesheetService {
         if (entry.getEntry_type() == TimeEntryType.SICK) {
             throw new IllegalStateException("Sick entries are managed by HR");
         }
-        System.out.println("projectId aus Request: " + dto.projectID());
         timeentryMapper.updateEntityFromDTO(dto, entry, resolveProject(dto.projectID()));   // recalculates creditedHours
+        checkRestPeriod(sheet.getEmployee().getId(), entry);
         return timesheetMapper.toDTO(sheet);               // no save() needed: the entity is managed
     }
 
@@ -192,5 +202,36 @@ public class TimesheetService {
     private Project resolveProject(Long projectId) {
         return projectId == null ? null : projectService.getById(projectId);
     }   
+    private static final long MIN_REST_MINUTES = 11 * 60;
 
+    private void checkRestPeriod(long employeeId, Timeentry entry) {
+        if (entry.getEntry_type() != TimeEntryType.WORK
+                || entry.getStartDate() == null || entry.getEndDate() == null) {
+            return;                                     // Flex- und Krankheitstage haben keine Zeiten
+        }
+        LocalDate date = entry.getEntryDate();
+        LocalDateTime start = date.atTime(entry.getStartDate());
+        LocalDateTime end = date.atTime(entry.getEndDate());
+
+        // Vortag: Ende der letzten Arbeit bis Beginn dieses Eintrags
+        for (Timeentry prev : timeentryRepository.findByTimesheetEmployeeIdAndEntryDate(employeeId, date.minusDays(1))) {
+            if (prev.getId() == entry.getId() || prev.getEndDate() == null) continue;
+            long rest = Duration.between(date.minusDays(1).atTime(prev.getEndDate()), start).toMinutes();
+            if (rest < MIN_REST_MINUTES) {
+                throw new IllegalArgumentException("Minimum rest period of 11 hours violated: work on "
+                        + date.minusDays(1) + " ended at " + prev.getEndDate());
+            }
+        }
+
+        // Folgetag: Ende dieses Eintrags bis Beginn der nächsten Arbeit
+        for (Timeentry next : timeentryRepository.findByTimesheetEmployeeIdAndEntryDate(employeeId, date.plusDays(1))) {
+            if (next.getId() == entry.getId() || next.getStartDate() == null) continue;
+            long rest = Duration.between(end, date.plusDays(1).atTime(next.getStartDate())).toMinutes();
+            if (rest < MIN_REST_MINUTES) {
+                throw new IllegalArgumentException("Minimum rest period of 11 hours violated: work on "
+                        + date.plusDays(1) + " starts at " + next.getStartDate());
+            }
+        }
+    }
 }
+
