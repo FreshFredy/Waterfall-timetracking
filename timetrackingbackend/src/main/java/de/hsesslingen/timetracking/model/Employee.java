@@ -1,6 +1,8 @@
 package de.hsesslingen.timetracking.model;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -18,8 +20,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import java.util.Comparator;
-import java.util.Optional;
 
 
 @Entity
@@ -77,7 +77,7 @@ public class Employee {
         this.targetH = targetH;
         this.supervisor = supervisor;
         setVacationBalance(new VacationBalance( 30, this));
-        setFlexAccount(new FlexAccount(100, -100, this));
+        setFlexAccount(new FlexAccount(-100, 100, this));
     }
 
     //Synching both sides of relation
