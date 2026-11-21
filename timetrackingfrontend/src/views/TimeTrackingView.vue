@@ -30,14 +30,16 @@ const resolveEmployeeId = async () => {
   throw new Error("Could not determine an employee ID: Neither `props.employeeId` nor a valid email address / employee data is available..")
 }
 
-const form = ref({
+// Ein einziger Ort für den Startzustand des Formulars
+const emptyForm = () => ({
   date: new Date().toISOString().substr(0, 10),
   start: '08:30',
   end: '17:00',
   breakMinutes: 30,
-  entryType: 'WORK',
-  projectId: null
+  entryType: '',
+  projectId: null,
 })
+const form = ref(emptyForm())
 
 // Editier-State
 const isEditing = ref(false)
@@ -62,6 +64,9 @@ const formatMinutes = (mins) => {
   const m = String(mins % 60).padStart(2, '0')
   return `${h}:${m}`
 }
+
+// "08:30" -> "08:30:00"
+const toTimeString = (t) => (t && t.length === 5 ? `${t}:00` : t)
 
 // Berechnung für die Live-Vorschau im rechten Formular
 const timeStats = computed(() => {
@@ -161,6 +166,7 @@ const mapBackendEntryToRow = (entry) => {
 
   const typeMapping = {
     'WORK': 'Work',
+    'FLEXTIME': 'Flex',
     'SICK': 'Sick',
     'krank': 'Sick',
     'VACATION': 'Vacation',
@@ -206,14 +212,7 @@ const cancelEdit = () => {
   isEditing.value = false
   editingEntryId.value = null
   errorMessage.value = ''
-  form.value = {
-    date: new Date().toISOString().substr(0, 10),
-    start: '08:30',
-    end: '17:00',
-    breakMinutes: 30,
-    entryType: 'WORK',
-    projectId: null
-  }
+  form.value = emptyForm()
 }
 
 // 2. Neuen Zeiteintrag erstellen (POST) oder bestehenden aktualisieren (PUT)
@@ -221,7 +220,12 @@ const handleFormSubmit = async () => {
   errorMessage.value = ''
   successMessage.value = ''
 
-  // HIER DIE PRÜFUNG: Wenn wir NICHT im Editier-Modus sind, prüfen ob für das Datum schon ein Eintrag existiert
+  if (!form.value.entryType) {
+    errorMessage.value = 'Please select an entry type.'
+    return
+  }
+
+  // Wenn wir NICHT im Editier-Modus sind, prüfen ob für das Datum schon ein Eintrag existiert
   if (!isEditing.value) {
     const existingEntryForDay = dailyEntries.value.find(entry => entry.rawDate === form.value.date)
     if (existingEntryForDay) {
@@ -229,14 +233,17 @@ const handleFormSubmit = async () => {
       return
     }
   }
-  
+
+  // Zeiten, Pause und Projekt gibt es nur bei normaler Arbeitszeit
+  const isWork = form.value.entryType === 'WORK'
+
   const payload = {
     entryDate: form.value.date,
-    startTime: form.value.start.length === 5 ? `${form.value.start}:00` : form.value.start,    
-    endTime: form.value.end.length === 5 ? `${form.value.end}:00` : form.value.end,        
-    breakMinutes: form.value.breakMinutes,  
+    startTime: isWork ? toTimeString(form.value.start) : null,
+    endTime: isWork ? toTimeString(form.value.end) : null,
+    breakMinutes: isWork ? (Number(form.value.breakMinutes) || 0) : 0,
     entryType: form.value.entryType,
-    projectID: form.value.projectId ?? null
+    projectID: isWork ? (form.value.projectId ?? null) : null
   }
 
   try {
@@ -255,8 +262,25 @@ const handleFormSubmit = async () => {
     fetchTimesheetData()
   } catch (err) {
     console.error('Speicherfehler:', err)
-    errorMessage.value = isEditing.value ? 'Eintrag konnte nicht aktualisiert werden.' : 'Eintrag konnte nicht gespeichert werden.'
+    errorMessage.value = err.response?.data?.error || (isEditing.value ? 'Eintrag konnte nicht aktualisiert werden.' : 'Eintrag konnte nicht gespeichert werden.')
   }
+}
+
+function diff(start, end) {
+    start = start.split(":");
+    end = end.split(":");
+    var startDate = new Date(0, 0, 0, start[0], start[1], 0);
+    var endDate = new Date(0, 0, 0, end[0], end[1], 0);
+    var diff = endDate.getTime() - startDate.getTime();
+    var hours = Math.floor(diff / 1000 / 60 / 60);
+    diff -= hours * 1000 * 60 * 60;
+    var minutes = Math.floor(diff / 1000 / 60);
+
+    // If using time pickers with 24 hours format, add the below line get exact hours
+    if (hours < 0)
+       hours = hours + 24;
+
+    return (hours <= 9 ? "0" : "") + hours + ":" + (minutes <= 9 ? "0" : "") + minutes;
 }
 
 // 3. Timesheet einreichen (Submit)
@@ -273,7 +297,7 @@ const handleTimesheetSubmit = async () => {
     successMessage.value = 'Timesheet wurde erfolgreich eingereicht!'
   } catch (err) {
     console.error('Submit-Fehler:', err)
-    errorMessage.value = 'Timesheet konnte nicht eingereicht werden.'
+    errorMessage.value = err.response?.data?.error || 'Timesheet konnte nicht eingereicht werden.'
   } finally {
     isSubmitting.value = false
   }
@@ -310,11 +334,10 @@ onMounted(() => {
     <div class="tt-header-row">
       <div class="tt-heading">
         <p class="tt-subtitle-top">YOUR WORKDAY LOG</p>
-      <h1 class="tt-title">Time tracking</h1>
-      <p class="tt-subtitle">Log your hours effortlessly. Stay on top of your day.</p>
+        <h1 class="tt-title">Time tracking</h1>
+        <p class="tt-subtitle">Log your hours effortlessly. Stay on top of your day.</p>
       </div>
       <div class="tt-actions">
-        <!-- Aktivierter Submit-Button -->
         <button 
           v-if="canSubmitTimesheet" 
           @click="handleTimesheetSubmit" 
@@ -390,7 +413,8 @@ onMounted(() => {
               <td class="td-net-val">{{ entry.net }}</td>
               <td class="td-project-val"><span class="project-text">{{ entry.project }}</span></td>
               <td class="td-action">
-                <button @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
+                <!-- Krankheitstage verwaltet HR, sie lassen sich hier nicht bearbeiten -->
+                <button v-if="entry.rawType !== 'SICK'" @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
                   Edit
                 </button>
               </td>
@@ -402,7 +426,7 @@ onMounted(() => {
       <div class="right-sidebar">
         <form @submit.prevent="handleFormSubmit" class="form-card" :class="{ 'edit-mode-border': isEditing }">
           <div class="form-card-header">
-            <h2 class="box-title">{{ isEditing ? 'Edit entrie' : 'Time tracking' }}</h2>
+            <h2 class="box-title">{{ isEditing ? 'Edit entry' : 'Time tracking' }}</h2>
             <StatusBadge variant="neutral" :label="currentTimesheet?.status || 'Draft'" />
           </div>
 
@@ -416,36 +440,52 @@ onMounted(() => {
             <input v-model="form.date" type="date" class="text-input" required />
           </label>
 
-          <div class="time-inputs-row">
-            <label class="input-label flex-1">
-              Start
-              <input v-model="form.start" type="time" class="text-input" required />
-            </label>
-            <label class="input-label flex-1">
-              End
-              <input v-model="form.end" type="time" class="text-input" required />
-            </label>
-          </div>
-
           <label class="input-label">
-            Break duration in minutes
-            <input v-model.number="form.breakMinutes" type="number" min="0" step="5" class="text-input" />
-          </label>
-
-          <div class="calc-box">
-            <div class="calc-header">
-              <span class="calc-val">Working hours : {{ timeStats.net }}</span>
-            </div>
-            <div class="calc-sub">Total time - break = Working hours</div>
-          </div>
-
-          <label class="input-label">
-            Project
-            <select v-model="form.projectId" class="select-input">
-              <option :value="null">– No project –</option>
-              <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+            Entry Type
+            <select v-model="form.entryType" class="select-input" required>
+              <option value="" disabled>– Select Entry Type –</option>
+              <option value="WORK">Working time</option>
+              <option value="FLEXTIME">Flex time (8 h)</option>
             </select>
           </label>
+
+          <!-- Nur bei normaler Arbeitszeit -->
+          <template v-if="form.entryType === 'WORK'">
+            <div class="time-inputs-row">
+              <label class="input-label flex-1">
+                Start
+                <input v-model="form.start" type="time" class="text-input" required />
+              </label>
+              <label class="input-label flex-1">
+                End
+                <input v-model="form.end" type="time" class="text-input" required />
+              </label>
+            </div>
+
+            <label class="input-label">
+              Break duration in minutes
+              <input v-model.number="form.breakMinutes" type="number" min="0" step="5" class="text-input" />
+            </label>
+
+            <div class="calc-box">
+              <div class="calc-header">
+                <span class="calc-val">Working hours : {{ timeStats.net }}</span>
+              </div>
+              <div class="calc-sub">Total time - break = Working hours</div>
+            </div>
+
+            <label class="input-label">
+              Project
+              <select v-model="form.projectId" class="select-input" required>
+                <option :value="null">– No project –</option>
+                <option v-for="p in projects" :key="p.id" :value="p.id">{{ p.name }}</option>
+              </select>
+            </label>
+          </template>
+
+          <p v-else-if="form.entryType === 'FLEXTIME'" class="flex-hint">
+            Flex day: 8:00 h are deducted from your flex balance once your supervisor approves the timesheet.
+          </p>
 
           <div class="form-actions-row">
             <button v-if="isEditing" type="button" @click="cancelEdit" class="cancel-btn">
@@ -505,7 +545,7 @@ onMounted(() => {
   cursor: pointer;
   font-size: 11px;
 }
-.tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; }
+.tt-container { padding: 32px; display: flex; flex-direction: column; gap: 24px; text-align: left;}
 .tt-header-row { height: 143px; display: flex; align-items: center; gap: 24px; }
 
 .tt-actions { display: flex; align-items: center; gap: 12px; }
@@ -707,5 +747,9 @@ onMounted(() => {
 td{
   text-align: center;
 }
-
+.flex-hint { 
+  font-size: 12px;
+  color: #697B80;
+  margin: 0; 
+}
 </style>
