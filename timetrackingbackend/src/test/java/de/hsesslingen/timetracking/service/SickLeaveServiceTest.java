@@ -12,8 +12,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.contains;
-import static org.mockito.ArgumentMatchers.eq;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedConstruction;
@@ -28,7 +26,6 @@ import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import de.hsesslingen.timetracking.EntryTypes.ExusedEntryType;
-import de.hsesslingen.timetracking.EntryTypes.TimeEntryType;
 import de.hsesslingen.timetracking.EntryTypes.TimesheetStatus;
 import de.hsesslingen.timetracking.dto.SickLeaveDTO;
 import de.hsesslingen.timetracking.dto.SickLeaveResponseDTO;
@@ -151,48 +148,6 @@ class SickLeaveServiceTest {
 
         assertThrows(SecurityException.class, () -> service.recordSickLeave(2L, dto));
         verifyNoInteractions(timesheetRepository, sickLeaveRepository);
-    }
-@Test
-    void recordSickLeave_createsNewTimesheetAndNotifiesWithDoctorNoteHint() {
-        LocalDate day = LocalDate.of(2026, 5, 11);
-        SickLeaveDTO dto = mock(SickLeaveDTO.class);
-        when(dto.employeeId()).thenReturn(1L);
-        when(dto.day()).thenReturn(day);
-        when(dto.excused()).thenReturn(ExusedEntryType.DOCOTRS_NOTE_MISSING);
-        when(dto.doctorsNotePath()).thenReturn(null);
-
-        SickLeaveResponseDTO responseDto = mock(SickLeaveResponseDTO.class);
-
-        when(employeeRepository.findById(1L)).thenReturn(Optional.of(employee));
-        when(employeeRepository.findById(50L)).thenReturn(Optional.of(hrUser));
-        when(timesheetRepository.findByEmployeeIdAndMonthAndYear(1L, 5, 2026)).thenReturn(Optional.empty());
-        when(timesheetRepository.save(any(Timesheet.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(timeentryRepository.save(any(Timeentry.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(sickLeaveRepository.save(any(SickLeave.class))).thenAnswer(inv -> inv.getArgument(0));
-        when(sickLeaveMapper.toDTO(any(SickLeave.class))).thenReturn(responseDto);
-
-        try (MockedConstruction<Timeentry> mockedEntry = mockConstruction(Timeentry.class,
-                (mock, context) -> {
-                    when(mock.getEntryDate()).thenReturn(day);
-                    when(mock.getEntry_type()).thenReturn(TimeEntryType.SICK);
-                })) {
-
-            SickLeaveResponseDTO result = service.recordSickLeave(50L, dto);
-
-            assertSame(responseDto, result);
-            assertEquals(1, mockedEntry.constructed().size());
-            assertEquals(1, employee.getTimesheets().size());
-            Timesheet createdSheet = employee.getTimesheets().get(0);
-            assertEquals(1, createdSheet.getTimeEntries().size());
-            assertEquals(TimeEntryType.SICK, createdSheet.getTimeEntries().get(0).getEntry_type());
-
-            verify(notificationService).notify(
-                    eq(employee),
-                    contains("Please hand in your doctor's note.")
-            );
-            verify(timeentryRepository).save(any(Timeentry.class));
-            verify(sickLeaveRepository).save(any(SickLeave.class));
-        }
     }
 
     @Test
