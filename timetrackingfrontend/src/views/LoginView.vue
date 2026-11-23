@@ -66,7 +66,7 @@ const handleLogin = async () => {
         </label>
 
         <button type="submit" class="submit-btn" :disabled="isLoading">
-          {{ isLoading ? 'Being logged in...' : 'Loggin in' }}
+          {{ isLoading ? 'Being logged in...' : 'Log in' }}
         </button>
       </form>
     </div>
