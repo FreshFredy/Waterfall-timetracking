@@ -15,7 +15,7 @@ public class VacationRequestMapper {
             r.getId(),
             r.getStartDate(),
             r.getEndDate(),
-            r.getWorkingDays(),
+            r.getEffectiveDays(),
             r.getStatus(),
             r.getRejectionReason(),
             r.getEmployee().getId(),

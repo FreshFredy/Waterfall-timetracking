@@ -60,45 +60,17 @@ public class Timeentry {
     }
 
     public Timeentry(LocalDate entryDate, LocalTime startDate, LocalTime endDate, Integer breakDuration, TimeEntryType entryType, Project project) {
+        if(this.project == null && this.entry_type == TimeEntryType.WORK) throw new IllegalArgumentException("You need to enter a Project");
+        if (entryType == TimeEntryType.FLEXTIME) ;
         this.entryDate = entryDate;
         this.startDate = startDate;
         this.endDate = endDate;
         this.breakDuration = breakDuration;
         this.entry_type = entryType;
         this.project = project;
+        
         calculateCreditedHours();
-        if(this.project == null) throw new IllegalArgumentException("You need to enter a Project");
-        calculateCreditedHours();
     }
-
-public void calculateCreditedHours() {
-    if (entry_type == TimeEntryType.SICK) {
-        this.creditedHours = 8;
-        return;
-    }
-    if (entry_type == TimeEntryType.FLEXTIME) {
-        this.creditedHours = 0;
-        return;
-    }
-    if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
-        throw new IllegalArgumentException("End time must be after start time");
-    }
-    int pause = breakDuration == null ? 0 : breakDuration;
-    breakDuration = pause;
-
-    long gross = Duration.between(startDate, endDate).toMinutes();
-    if (gross > 10 * 60) {
-        throw new IllegalArgumentException("Working time must not exceed 10 hours per day");
-    }
-    int requiredBreak = gross >= 9 * 60 ? 45 : gross >= 6 * 60 ? 30 : 0;
-    if (pause < requiredBreak) {
-        throw new IllegalArgumentException("At least " + requiredBreak + " minutes break are required");
-    }
-    this.creditedHours = (gross - pause) / 60f;
-}
-
-
-
     public long getId() {
         return id;
     }
@@ -136,15 +108,49 @@ public void calculateCreditedHours() {
     }
     public void update(LocalDate entryDate, LocalTime startDate, LocalTime endDate,
                    Integer breakDuration, TimeEntryType entryType, Project project) {
+    if(this.project == null && this.entry_type == TimeEntryType.WORK) throw new IllegalArgumentException("You need to enter a Project");
     this.entryDate = entryDate;
     this.startDate = startDate;
     this.endDate = endDate;
     this.breakDuration = breakDuration;
     this.entry_type = entryType;
     this.project = project;
-    if(this.project == null) throw new IllegalArgumentException("You need to enter a Project");
+    
     calculateCreditedHours();
     }
+
+        public void calculateCreditedHours() {
+            //Sick
+            if (entry_type == TimeEntryType.SICK) {
+                this.creditedHours = 8;
+                return;
+            }
+            //Flextime
+            if (entry_type == TimeEntryType.FLEXTIME) {
+                this.creditedHours = 0;
+                return;
+            }
+            //Checks
+            if (startDate == null || endDate == null || !endDate.isAfter(startDate)) {
+                throw new IllegalArgumentException("End time must be after start time");
+            }
+            int pause = breakDuration == null ? 0 : breakDuration;
+            breakDuration = pause;
+
+            long gross = Duration.between(startDate, endDate).toMinutes();
+            if (gross > 10 * 60) {
+                throw new IllegalArgumentException("Working time must not exceed 10 hours per day");
+            }
+            int requiredBreak = gross >= 9 * 60 ? 45 : gross >= 6 * 60 ? 30 : 0;
+            if (pause < requiredBreak) {
+                throw new IllegalArgumentException("At least " + requiredBreak + " minutes break are required");
+            }
+            //credit
+            this.creditedHours = (gross - pause) / 60f;
+    }
+
+
+    
 
     @Override
     public String toString() {

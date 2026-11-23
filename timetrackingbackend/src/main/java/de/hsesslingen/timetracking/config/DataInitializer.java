@@ -195,8 +195,8 @@ public class DataInitializer implements CommandLineRunner {
                 Timeentry longWorkEntry = new Timeentry(
                     date,
                     LocalTime.of(8, 0),
-                    LocalTime.of(18, 30),
-                    30,
+                    LocalTime.of(17, 30),
+                    45,
                     TimeEntryType.WORK,
                     null
                 );
@@ -291,4 +291,6 @@ public class DataInitializer implements CommandLineRunner {
         }
         return weekdays;
     }
+
+    
 }

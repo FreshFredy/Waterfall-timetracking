@@ -51,24 +51,27 @@ public class Timesheet {
         this.employee = employee;
     }
 
-public void checkEditable() {
-    if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
-        throw new IllegalStateException("Timesheet can no longer be edited (status " + status + ")");
+    public void checkEditable() {
+        if (status != TimesheetStatus.DRAFT && status != TimesheetStatus.REJECTED) {
+            throw new IllegalStateException("Timesheet can no longer be edited (status " + status + ")");
+        }
     }
-}
 
-public void checkInPeriod(LocalDate date) {
-    if (date == null || date.getMonthValue() != month || date.getYear() != year) {
-        throw new IllegalArgumentException("Entry date must be in " + month + "/" + year);
+    public void checkInPeriod(LocalDate date) {
+        if (date == null || date.getMonthValue() != month || date.getYear() != year) {
+            throw new IllegalArgumentException("Entry date must be in " + month + "/" + year);
+        }
     }
-}
 
-public void addEntry(Timeentry entry) {
-    checkEditable();
-    checkInPeriod(entry.getEntryDate());
-    timeEntries.add(entry);
-    entry.setTimesheet(this);
-}
+    public void addEntry(Timeentry entry) {
+        checkEditable();
+        checkInPeriod(entry.getEntryDate());
+        if (timeEntries.stream().anyMatch(e -> entry.getEntryDate().equals(e.getEntryDate()))) {
+            throw new IllegalStateException("There is already an entry for " + entry.getEntryDate());
+        }
+        timeEntries.add(entry);
+        entry.setTimesheet(this);
+    }
 
     public float getWorkedHours() {
         float sum = 0;
@@ -168,6 +171,13 @@ public void addEntry(Timeentry entry) {
         return change;
     }
 
+    public void replaceDayWithSickEntry(Timeentry sickEntry) {
+        LocalDate day = sickEntry.getEntryDate();
+        checkInPeriod(day);
+        timeEntries.removeIf(e -> day.equals(e.getEntryDate()));   // orphanRemoval 
+        timeEntries.add(sickEntry);
+        sickEntry.setTimesheet(this);
+    }
 
     @Override
     public String toString() {

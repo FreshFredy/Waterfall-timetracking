@@ -28,4 +28,15 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
                           @Param("startDate") LocalDate startDate,
                           @Param("endDate") LocalDate endDate,
                           @Param("statuses") Collection<VacationStatus> statuses);
-    }
+
+  @Query("""
+      select v from VacationRequest v
+      where v.employee.id = :employeeId
+        and v.status in :statuses
+        and v.startDate <= :day
+        and v.endDate >= :day
+      """)
+  List<VacationRequest> findCovering(@Param("employeeId") Long employeeId,
+                                    @Param("day") LocalDate day,
+                                    @Param("statuses") Collection<VacationStatus> statuses);
+}

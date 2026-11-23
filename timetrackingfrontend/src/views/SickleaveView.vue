@@ -3,6 +3,15 @@ import { ref, computed, onMounted } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import { sickLeaveService } from "../services/api.js";
 import EmployeeService from '../services/api.js'
+import EmployeeCombobox from '../components/ui/EmployeeCombobox.vue'
+
+const employees = ref([])
+const selectedEmployeeId = ref(null)
+
+onMounted(async () => {
+  const response = await EmployeeService.getAll()
+  employees.value = response.data || []
+})
 
 const props = defineProps({
   employeeId: { type: Number },
@@ -120,10 +129,10 @@ const handleSubmit = async () => {
   return
   }
 
-    if (!form.value.employeeId || previewDays.value.length === 0) {
-      alert("Please provide an employee ID and a valid time period.")
-      return
-    }
+  if (!selectedEmployeeId.value) {
+    errorMessage.value = 'Please select an employee.'
+    return
+  }
 
     // Für jeden Werktag in der Vorschau einen API-Call ausführen
     for (const day of previewDays.value) {
@@ -134,7 +143,7 @@ const handleSubmit = async () => {
       const formattedDate = `${year}-${month}-${d}`
 
       const payload = {
-        employeeId: Number(form.value.employeeId),
+        employeeId: selectedEmployeeId.value,
         day: formattedDate,
         excused: form.value.excused, // z.B. EXCUSED oder DOCTORS_NOTE_MISSING
         doctorsNotePath: form.value.fileName || null
@@ -152,7 +161,7 @@ const handleSubmit = async () => {
 
 // Ruft alle Krankmeldungen des Mitarbeiters ab
 const handleSearch = async () => {
-  const id = searchEmployeeId.value.trim()
+  const id = searchEmployeeId.value
   if (!id) return
 
   searchedEmployee.value = id
@@ -164,6 +173,7 @@ const handleSearch = async () => {
     employeeSickLeaves.value = []
   }
 }
+
 </script>
 
 <template>
@@ -182,42 +192,35 @@ const handleSearch = async () => {
           <StatusBadge variant="neutral" label="Draft" />
         </div>
 
-        <!-- Employee ID -->
-        <label class="input-label">
-          Employee ID
+        <div class="input-label">
+          <span>Employee</span>
+          <EmployeeCombobox v-model="selectedEmployeeId" :employees="employees" />
+        </div>
+
+        <!-- Date inputs -->
+      <div class="time-inputs-row">
+        <label class="input-label flex-1">
+          Start date
           <input
-            v-model="form.employeeId"
-            type="text"
+            v-model="form.startDate"
+            type="date"
             class="text-input"
-            placeholder="Enter employee ID..."
             required
           />
         </label>
 
-        <!-- Date inputs -->
-        <div class="time-inputs-row">
-          <label class="input-label flex-1">
-            Start date
-            <input
-              v-model="form.startDate"
-              type="date"
-              class="text-input"
-              required
-            />
-          </label>
+        <label class="input-label flex-1">
+          End Date
+          <input
+            v-model="form.endDate"
+            type="date"
+            class="text-input"
+            required
+          />
+        </label>
+      </div>
 
-          <label class="input-label flex-1">
-            End Date
-            <input
-              v-model="form.endDate"
-              type="date"
-              class="text-input"
-              required
-            />
-          </label>
-        </div>
-
-        <p class="note-txt">
+      <p class="note-txt">
           Start and end dates are included (weekends are automatically skipped)
         </p>
 
@@ -275,16 +278,11 @@ const handleSearch = async () => {
 
       <div class="search-section">
         <form class="search-bar-row" @submit.prevent="handleSearch" style="max-width: none; display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
-          <label class="input-label" style="flex: 1; min-width: 150px;">
-            Employee ID
-            <input
-              v-model="searchEmployeeId"
-              type="text"
-              class="text-input"
-              placeholder="Enter employee ID ..."
-              required
-            />
-          </label>
+
+          <div class="input-label" style="flex: 1; min-width: 150px;">
+            <span>Employee</span>
+            <EmployeeCombobox v-model="searchEmployeeId" :employees="employees" direction="up"/>
+          </div>
 
           <!-- Zeitraum Von -->
           <label class="input-label" style="flex: 1; min-width: 150px;">
@@ -314,7 +312,7 @@ const handleSearch = async () => {
         <!-- Zähler-Ergebnis -->
         <div v-if="searchedEmployee" class="result-display-box">
           <div class="preview-kpi-box light" style="max-width: 320px; margin-top: 20px;">
-            <span class="pkpi-lbl">Total days of illness(ID: {{ searchedEmployee }})</span>
+            <span class="pkpi-lbl">Total days of illness</span>
             <span class="pkpi-val">{{ searchedSickDaysCount }} Days</span>
           </div>
         </div>
@@ -376,7 +374,7 @@ const handleSearch = async () => {
 .preview-table-row { height: 40px; padding: 0 24px; background: #F9F7FC; border-bottom: 1px #DFE7E8 solid; display: flex; align-items: center; font-size: 12px; }
 .ptr-date { flex: 1; color: #172D32; }
 
-.history-table-card { background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; overflow: hidden; }
+.history-table-card { background: white; border-radius: 12px; outline: 1px #DFE7E8 solid; }
 .hist-table-header { padding: 20px 24px; display: flex; justify-content: space-between; align-items: center; }
 .search-section { padding: 0 24px 24px 24px; }
 .search-btn { height: 43px; }

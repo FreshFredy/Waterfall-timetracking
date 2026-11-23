@@ -82,24 +82,27 @@ public class VacationBalance {
     public void resetTakenDays(){
         this.taken_days = 0;
     }
-public void reserveDays(int days) {
-    // remainingDays does not subtract planned days, so both are checked here
-    if (days > getRemainingDays() - planned_days) {
-        throw new IllegalStateException("Not enough vacation days left");
+    public void reserveDays(int days) {
+        // remainingDays does not subtract planned days, so both are checked here
+        if (days > getRemainingDays() - planned_days) {
+            throw new IllegalStateException("Not enough vacation days left");
+        }
+        planned_days += days;
     }
-    planned_days += days;
-}
 
-public void releaseDays(int days) {
-    planned_days = Math.max(0, planned_days - days);
-}
+    public void releaseDays(int days) {
+        planned_days = Math.max(0, planned_days - days);
+    }
 
-public void approveDays(int days) {
-    planned_days = Math.max(0, this.planned_days - days);
-    taken_days += days;
-}
+    public void approveDays(int days) {
+        planned_days = Math.max(0, this.planned_days - days);
+        taken_days += days;
+    }
 
-public void cancelApprovedDays(int days) {
+    public void cancelApprovedDays(int days) {
+        taken_days = Math.max(0, taken_days - days);
+    }
+    public void releaseTakenDays(int days) {
     taken_days = Math.max(0, taken_days - days);
 }
 

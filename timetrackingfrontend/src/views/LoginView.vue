@@ -56,12 +56,12 @@ const handleLogin = async () => {
 
       <form @submit.prevent="handleLogin" class="login-form">
         <label class="input-label">
-          E-Mail-Adresse
+          E-Mail
           <input v-model="email" type="email" class="text-input" placeholder="name@company.com" required />
         </label>
 
         <label class="input-label">
-          Passwort
+          Password
           <input v-model="password" type="password" class="text-input" placeholder="••••••••" required />
         </label>
 

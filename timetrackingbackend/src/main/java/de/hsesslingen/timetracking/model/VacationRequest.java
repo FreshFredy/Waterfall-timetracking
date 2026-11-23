@@ -27,6 +27,9 @@ public class VacationRequest {
     @Column(name = "rejection_reason")
     private String rejectionReason;
 
+    @Column(name = "credited_back_days")
+    private Integer creditedBackDays;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "employee_id")
     private Employee employee;
@@ -34,6 +37,7 @@ public class VacationRequest {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approver_id")
     private Supervisor approver;             // set when reviewed
+
 
     public VacationRequest() {}
 
@@ -79,12 +83,39 @@ public class VacationRequest {
         }
         status = VacationStatus.CANCELLED;
     }
+    public int getCreditedBackDays() { 
+        return creditedBackDays == null ? 0 : creditedBackDays; 
+    }
 
-    public long getId() { return id; }
-    public LocalDate getStartDate() { return startDate; }
-    public LocalDate getEndDate() { return endDate; }
-    public VacationStatus getStatus() { return status; }
-    public String getRejectionReason() { return rejectionReason; }
-    public Employee getEmployee() { return employee; }
-    public Supervisor getApprover() { return approver; }
+    // Arbeitstage, die noch gegen das Urlaubskonto zählen
+    public int getEffectiveDays() { 
+        return Math.max(0, getWorkingDays() - getCreditedBackDays()); 
+    }
+
+    public void creditBackDay() { 
+        creditedBackDays = getCreditedBackDays() + 1; 
+    }
+
+
+    public long getId() { 
+        return id; 
+    }
+    public LocalDate getStartDate() { 
+        return startDate; 
+    }
+    public LocalDate getEndDate() { 
+        return endDate; 
+    }
+    public VacationStatus getStatus() { 
+        return status; 
+    }
+    public String getRejectionReason() {
+        return rejectionReason; 
+    }
+    public Employee getEmployee() { 
+        return employee; 
+    }
+    public Supervisor getApprover() { 
+        return approver; 
+    }
 }

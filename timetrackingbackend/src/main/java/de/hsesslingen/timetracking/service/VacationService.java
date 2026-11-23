@@ -108,21 +108,12 @@ public class VacationService {
 
         // Prüfen, ob der Antrag vor dem Canceln genehmigt war
         boolean wasApproved = request.getStatus() == VacationStatus.APPROVED;
-        int workingDays = request.getWorkingDays();
-
-        request.cancel(); // Setzt den Status auf CANCELLED
-
-        // Kontostand je nach vorherigem Status korrekt zurücksetzen
+        request.cancel();
+        int days = request.getEffectiveDays();
         if (wasApproved) {
-            request.getEmployee().getVacationBalance().cancelApprovedDays(workingDays);
-            
-            Employee e = request.getEmployee();
-            notificationService.notify(e.getSupervisor(),
-                e.getFirstname() + " " + e.getLastname() + " cancelled the approved vacation from "
-                + request.getStartDate() + " to " + request.getEndDate());
+            request.getEmployee().getVacationBalance().releaseTakenDays(days);
         } else {
-            // War noch PENDING, Tage waren also in planned_days gespeichert
-            request.getEmployee().getVacationBalance().releaseDays(workingDays);
+            request.getEmployee().getVacationBalance().releaseDays(days);
         }
 
         return vacationRequestMapper.toDTO(request);
@@ -138,7 +129,7 @@ public class VacationService {
         request.approve(requireResponsibleSupervisor(request, supervisorId));
         
         // 2. Tage von planned_days in taken_days übertragen
-        request.getEmployee().getVacationBalance().approveDays(request.getWorkingDays());
+        request.getEmployee().getVacationBalance().approveDays(request.getEffectiveDays());
 
         // 3. Benachrichtigung an den Mitarbeiter senden
         notificationService.notify(request.getEmployee(),
@@ -160,7 +151,7 @@ public class VacationService {
             + " was rejected: " + reason);
             
         // Bei Ablehnung waren die Tage in planned_days und werden wieder freigegeben
-        request.getEmployee().getVacationBalance().releaseDays(request.getWorkingDays());
+        request.getEmployee().getVacationBalance().releaseDays(request.getEffectiveDays());
         
         return vacationRequestMapper.toDTO(request);
     }

@@ -284,7 +284,7 @@ const handleAddVacation = async () => {
 
 const yearshow = computed(() => {
   const date = (new Date().getFullYear() - 1);
-  return date.toLocaleString('en-US', { year: 'numeric' });
+  return date;
 })
 </script>
 
