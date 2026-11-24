@@ -71,6 +71,7 @@ public class Timesheet {
         }
         timeEntries.add(entry);
         entry.setTimesheet(this);
+        
     }
 
     public float getWorkedHours() {

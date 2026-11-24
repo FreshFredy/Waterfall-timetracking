@@ -189,7 +189,8 @@ const mapBackendEntryToRow = (entry) => {
     'SICK': 'Sick',
     'krank': 'Sick',
     'VACATION': 'Vacation',
-    'URLAUB': 'Vacation'
+    'URLAUB': 'Vacation',
+    'BREAK': 'Break'
   }
 
   const displayType = typeMapping[rawType] ?? rawType
@@ -470,6 +471,7 @@ function diff(start, end) {
               <option value="" disabled>– Select Entry Type –</option>
               <option value="WORK">Working time</option>
               <option value="FLEXTIME">Flex time (8 h)</option>
+              <option value="BREAK">Break</option>
             </select>
           </label>
 
@@ -510,6 +512,16 @@ function diff(start, end) {
           <p v-else-if="form.entryType === 'FLEXTIME'" class="flex-hint">
             Flex day: 8:00 h are deducted from your flex balance once your supervisor approves the timesheet.
           </p>
+          <template v-else-if="form.entryType === 'BREAK'" >
+              <label class="input-label flex-1">
+                Start
+                <input v-model="form.start" type="time" class="text-input" required />
+              </label>
+            <label class="input-label">
+              Break duration in minutes
+              <input v-model.number="form.breakMinutes" type="number" min="0" step="5" class="text-input" />
+            </label>
+          </template>
 
           <div class="form-actions-row">
             <button v-if="isEditing" type="button" @click="cancelEdit" class="cancel-btn">
