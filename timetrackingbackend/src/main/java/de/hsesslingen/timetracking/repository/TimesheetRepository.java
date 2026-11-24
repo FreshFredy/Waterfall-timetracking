@@ -11,4 +11,5 @@ public interface TimesheetRepository extends JpaRepository<Timesheet, Long> {
     List<Timesheet> findByEmployeeIdOrderByYearDescMonthDesc(Long employeeId); 
     List<Timesheet> findByEmployeeSupervisorIdOrderByYearDescMonthDesc(Long supervisorId);
     List<Timesheet> findByEmployeeSupervisorIdAndStatusOrderByYearDescMonthDesc(Long supervisorId, TimesheetStatus status);
+  
 }

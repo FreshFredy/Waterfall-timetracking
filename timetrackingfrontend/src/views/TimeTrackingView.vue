@@ -1,9 +1,11 @@
 <script setup>
+//Imports
 import { ref, computed, onMounted, watch } from 'vue'
 import StatusBadge from '../components/ui/StatusBadge.vue'
 import { timesheetService, projectService } from '../services/api.js'
 import EmployeeService from '../services/api.js'
 
+//Used Constants
 const props = defineProps({
   employeeId: { type: Number },
   user: {
@@ -30,7 +32,7 @@ const resolveEmployeeId = async () => {
   throw new Error("Could not determine an employee ID: Neither `props.employeeId` nor a valid email address / employee data is available..")
 }
 
-// Ein einziger Ort für den Startzustand des Formulars
+
 const emptyForm = () => ({
   date: new Date().toISOString().substr(0, 10),
   start: '08:30',
@@ -56,7 +58,24 @@ const isLoading = ref(false)
 const isSubmitting = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const filters = ref({
+  type: 'ALL',
+})
+const sortDirection = ref('asc')
 
+// One rule per filter key: true = the entry stays in the list
+const filterRules = {
+  type: (entry, value) => value === 'ALL' || entry.rawType === value,
+}
+
+const visibleEntries = computed(() => {
+  const source = Array.isArray(dailyEntries.value) ? dailyEntries.value : []
+  const dir = sortDirection.value === 'asc' ? 1 : -1
+  return source
+    .filter(entry => Object.entries(filters.value)
+      .every(([key, value]) => filterRules[key](entry, value)))
+    .sort((a, b) => a.rawDate.localeCompare(b.rawDate) * dir)
+})
 // Hilfsfunktion: Minuten in "H:MM" formatieren
 const formatMinutes = (mins) => {
   if (mins == null || isNaN(mins)) return '0:00'
@@ -109,7 +128,7 @@ const loadProjects = async () => {
   }
 }
 
-// 1. Timesheet und Einträge vom Backend laden (GET)
+// Timesheet und Einträge vom Backend laden (GET)
 const fetchTimesheetData = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -266,24 +285,7 @@ const handleFormSubmit = async () => {
   }
 }
 
-function diff(start, end) {
-    start = start.split(":");
-    end = end.split(":");
-    var startDate = new Date(0, 0, 0, start[0], start[1], 0);
-    var endDate = new Date(0, 0, 0, end[0], end[1], 0);
-    var diff = endDate.getTime() - startDate.getTime();
-    var hours = Math.floor(diff / 1000 / 60 / 60);
-    diff -= hours * 1000 * 60 * 60;
-    var minutes = Math.floor(diff / 1000 / 60);
-
-    // If using time pickers with 24 hours format, add the below line get exact hours
-    if (hours < 0)
-       hours = hours + 24;
-
-    return (hours <= 9 ? "0" : "") + hours + ":" + (minutes <= 9 ? "0" : "") + minutes;
-}
-
-// 3. Timesheet einreichen (Submit)
+//Timesheet einreichen (Submit)
 const handleTimesheetSubmit = async () => {
   if (!currentTimesheet.value || !currentTimesheet.value.id) return
 
@@ -319,6 +321,8 @@ const resetToToday = () => {
   selectedDate.value = new Date()
 }
 
+//Watcher and Functions
+
 watch(selectedDate, () => {
   fetchTimesheetData()
 })
@@ -327,6 +331,23 @@ onMounted(() => {
   loadProjects()
   fetchTimesheetData()
 })
+
+function diff(start, end) {
+    start = start.split(":");
+    end = end.split(":");
+    var startDate = new Date(0, 0, 0, start[0], start[1], 0);
+    var endDate = new Date(0, 0, 0, end[0], end[1], 0);
+    var diff = endDate.getTime() - startDate.getTime();
+    var hours = Math.floor(diff / 1000 / 60 / 60);
+    diff -= hours * 1000 * 60 * 60;
+    var minutes = Math.floor(diff / 1000 / 60);
+
+    // If using time pickers with 24 hours format, add the below line get exact hours
+    if (hours < 0)
+       hours = hours + 24;
+
+    return (hours <= 9 ? "0" : "") + hours + ":" + (minutes <= 9 ? "0" : "") + minutes;
+}
 </script>
 
 <template>
@@ -404,7 +425,10 @@ onMounted(() => {
             <tr v-else-if="dailyEntries.length === 0">
               <td colspan="8" class="empty-state">No entries available for this month.</td>
             </tr>
-            <tr v-else v-for="(entry, index) in dailyEntries" :key="entry.id || index" class="data-tr" :class="{ 'editing-row': editingEntryId === entry.id }">
+            <tr v-else-if="visibleEntries.length === 0">
+              <td colspan="8" class="empty-state">No entries match the filter.</td>
+            </tr>
+            <tr v-else v-for="(entry, index) in visibleEntries" :key="entry.id || index" class="data-tr" :class="{ 'editing-row': editingEntryId === entry.id }">
               <td class="td-date"><span class="project-text">{{ entry.date }}</span></td>
               <td>{{ entry.start }}</td>
               <td>{{ entry.end }}</td>
