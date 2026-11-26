@@ -27,16 +27,16 @@ const resolveEmployeeId = async () => {
   }
 
   if (props.user && props.user.email) {
-    console.log("Versuche ID für E-Mail aufzulösen:", props.user.email)
+    console.log("Trying to resolve E-Mail:", props.user.email)
     const employeesResponse = await EmployeeService.getAll(props.user.email)
-    console.log("Antwort von EmployeeService.getAll:", employeesResponse)
+    console.log("Awnser from EmployeeService.getAll:", employeesResponse)
     
     if (employeesResponse.data && employeesResponse.data.length > 0) {
       return employeesResponse.data[0].id
     }
   }
 
-  throw new Error("Konnte keine Employee-ID ermitteln: Weder props.employeeId noch eine gültige E-Mail / Employee-Daten vorhanden.")
+  throw new Error("Couldnt get Employee ID: Neither name nor email found / Employee-Data available.")
 }
 
 const form = ref({
@@ -125,7 +125,7 @@ const handleSubmit = async () => {
       hrId = await resolveEmployeeId()
     } catch (error) {
     console.error(error)
-    alert("Fehler: Konnte keine HR-ID des angemeldeten Benutzers ermitteln.")
+    alert("Fehler: Couldnt resolve Employee-ID.")
   return
   }
 
@@ -154,8 +154,8 @@ const handleSubmit = async () => {
 
     handleCancel()
   } catch (error) {
-    console.error("Fehler beim Speichern der Krankmeldung:", error)
-    alert("Fehler beim Speichern der Krankmeldung.")
+    console.error("Error saving Sickleave:", error)
+    alert("Error saving Sickleave.")
   }
 }
 
@@ -169,7 +169,7 @@ const handleSearch = async () => {
     const response = await sickLeaveService.getByEmployee(id)
     employeeSickLeaves.value = Array.isArray(response.data) ? response.data : []
   } catch (error) {
-    console.error("Fehler beim Abrufen der Krankmeldungen:", error)
+    console.error("Error loading Sick leaves:", error)
     employeeSickLeaves.value = []
   }
 }

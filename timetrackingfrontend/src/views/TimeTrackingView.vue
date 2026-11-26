@@ -20,9 +20,9 @@ const resolveEmployeeId = async () => {
   }
 
   if (props.user && props.user.email) {
-    console.log("Versuche ID für E-Mail aufzulösen:", props.user.email)
+    console.log("Trying to resolve ID for email:", props.user.email)
     const employeesResponse = await EmployeeService.getAll(props.user.email)
-    console.log("Antwort von EmployeeService.getAll:", employeesResponse)
+    console.log("Awnser from Service:", employeesResponse)
     
     if (employeesResponse.data && employeesResponse.data.length > 0) {
       return employeesResponse.data[0].id
@@ -249,7 +249,7 @@ const handleFormSubmit = async () => {
   if (!isEditing.value) {
     const existingEntryForDay = dailyEntries.value.find(entry => entry.rawDate === form.value.date)
     if (existingEntryForDay) {
-      errorMessage.value = `Für den ${form.value.date} existiert bereits ein Zeiteintrag. Pro Tag ist nur ein Eintrag erlaubt. Du kannst den bestehenden Eintrag stattdessen bearbeiten.`
+      errorMessage.value = `There is already an entry on ${form.value.date}.`
       return
     }
   }
@@ -282,7 +282,7 @@ const handleFormSubmit = async () => {
     fetchTimesheetData()
   } catch (err) {
     console.error('Speicherfehler:', err)
-    errorMessage.value = err.response?.data?.error || (isEditing.value ? 'Eintrag konnte nicht aktualisiert werden.' : 'Eintrag konnte nicht gespeichert werden.')
+    errorMessage.value = err.response?.data?.error || (isEditing.value ? 'Entry couldnt be edited.' : 'Couldnt save entry.')
   }
 }
 
@@ -297,10 +297,10 @@ const handleTimesheetSubmit = async () => {
   try {
     const response = await timesheetService.submit(currentTimesheet.value.id)
     currentTimesheet.value = response.data
-    successMessage.value = 'Timesheet wurde erfolgreich eingereicht!'
+    successMessage.value = 'Timesheet handed in!'
   } catch (err) {
     console.error('Submit-Fehler:', err)
-    errorMessage.value = err.response?.data?.error || 'Timesheet konnte nicht eingereicht werden.'
+    errorMessage.value = err.response?.data?.error || 'Timesheet couldnt be handed in.'
   } finally {
     isSubmitting.value = false
   }
@@ -391,15 +391,15 @@ function diff(start, end) {
 
           <div class="date-navigation">
             <div class="nav-group">
-              <button @click="changeYear(-1)" class="nav-btn" title="Vorheriges Jahr">«</button>
-              <button @click="changeMonth(-1)" class="nav-btn" title="Vorheriger Monat">‹</button>
+              <button @click="changeYear(-1)" class="nav-btn" title="Last Year">«</button>
+              <button @click="changeMonth(-1)" class="nav-btn" title="Last Month">‹</button>
             </div>
 
             <span class="current-period">{{ formattedPeriod }}</span>
 
             <div class="nav-group">
-              <button @click="changeMonth(1)" class="nav-btn" title="Nächster Monat">›</button>
-              <button @click="changeYear(1)" class="nav-btn" title="Nächstes Jahr">»</button>
+              <button @click="changeMonth(1)" class="nav-btn" title="Next Month">›</button>
+              <button @click="changeYear(1)" class="nav-btn" title="Next Year">»</button>
             </div>
 
             <button @click="resetToToday" class="today-btn">Today</button>
@@ -439,7 +439,7 @@ function diff(start, end) {
               <td class="td-project-val"><span class="project-text">{{ entry.project }}</span></td>
               <td class="td-action">
                 <!-- Krankheitstage verwaltet HR, sie lassen sich hier nicht bearbeiten -->
-                <button v-if="entry.rawType !== 'SICK'" @click="handleEditClick(entry)" class="edit-btn" title="Eintrag bearbeiten">
+                <button v-if="entry.rawType !== 'SICK'" @click="handleEditClick(entry)" class="edit-btn" title="Edit entry">
                   Edit
                 </button>
               </td>

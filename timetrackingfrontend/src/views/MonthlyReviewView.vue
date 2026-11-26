@@ -15,7 +15,7 @@ const props = defineProps({
   employeeId: { type: Number }
 })
 const errorText = (error) =>
-  error.response?.data?.error || error.response?.data?.message || error.message || 'Unbekannter Fehler'
+  error.response?.data?.error || error.response?.data?.message || error.message || 'Unknown Error'
 const pendingRequests = ref([])
 const submittedTimesheets = ref([])
 const rejectionReasons = ref({})
@@ -67,7 +67,7 @@ const fetchPendingRequests = async () => {
         
         const requestsWithEmployeeNames = await Promise.all(
             response.data.map(async (req) => {
-                let empName = `Mitarbeiter ID: ${req.employeeId}`;
+                let empName = `Employee ID: ${req.employeeId}`;
                 try {
                     if (req.employeeId) {
                         const empResponse = await EmployeeService.get(req.employeeId);
@@ -79,7 +79,7 @@ const fetchPendingRequests = async () => {
                         }
                     }
                 } catch (err) {
-                    console.error(`Konnte Mitarbeiter mit ID ${req.employeeId} nicht laden:`, err);
+                    console.error(`Couldnt load ID ${req.employeeId}:`, err);
                 }
 
                 const formatDate = (dateStr) => {
@@ -107,7 +107,7 @@ const fetchPendingRequests = async () => {
 
         pendingRequests.value = requestsWithEmployeeNames;
     } catch (error) {
-        console.error("Fehler beim Laden der ausstehenden Anträge:", error);
+        console.error("Error loading requests:", error);
     }
 }
 
@@ -128,9 +128,9 @@ const fetchSubmittedTimesheets = async () => {
             try {
                 const e = (await EmployeeService.get(id)).data;
                 const full = `${e.firstname || e.firstName || ''} ${e.lastname || e.lastName || ''}`.trim();
-                names[id] = full || `Mitarbeiter ID: ${id}`;
+                names[id] = full || `Employee ID: ${id}`;
             } catch (err) {
-                names[id] = `Mitarbeiter ID: ${id}`;
+                names[id] = `Employee ID: ${id}`;
             }
         }));
 
@@ -149,7 +149,7 @@ const fetchSubmittedTimesheets = async () => {
             };
         });
     } catch (error) {
-        console.error("Fehler beim Laden der eingereichten Timesheets:", error);
+        console.error("Error loading handed in Timesheets:", error);
         submittedTimesheets.value = [];
     }
 }
@@ -178,18 +178,18 @@ const handleApproveTimesheet = async (timesheetId) => {
   try {
     const supervisorId = await getSupervisorId();
     if (!supervisorId) {
-      alert("Fehler: Konnte keine Supervisor-ID ermitteln.");
+      alert("Error: Couldnt get SupervisorID.");
       return;
     }
 
     await timesheetService.approve(timesheetId, supervisorId);
-    alert("Timesheet erfolgreich genehmigt.");
+    alert("Timesheet got approved.");
     closeDetailModal();
     await fetchSubmittedTimesheets();
   } catch (error) {
-    console.error("Fehler beim Genehmigen des Timesheets:", error);
+    console.error("Error accepting timesheet:", error);
     const msg = errorText(error);
-    alert(`Timesheet konnte nicht genehmigt werden: ${msg}`);
+    alert(`Timesheet couldnt be approved: ${msg}`);
   }
 }
 
@@ -302,15 +302,15 @@ watch(
               <input 
                 v-model="rejectionReasons[req.id]" 
                 type="text" 
-                placeholder="Grund (nur bei Ablehnung nötig)" 
+                placeholder="Reason (only on rejection)" 
                 class="reason-input"
               />
             </td>
             <td class="td-actions-group">
-              <button @click="handleApprove(req.id)" class="approve-btn" title="Antrag genehmigen">
-                Permit
+              <button @click="handleApprove(req.id)" class="approve-btn" title="Accept">
+                Accept
               </button>
-              <button @click="handleReject(req.id)" class="reject-btn" title="Antrag ablehnen">
+              <button @click="handleReject(req.id)" class="reject-btn" title="Reject">
                 Reject
               </button>
             </td>
@@ -364,7 +364,7 @@ watch(
         <div class="modal-header">
           <div>
             <h2 class="box-title">Timesheet Details</h2>
-            <p class="modal-subtitle">{{ selectedTimesheet?.employeeDisplayName }} (Monat: {{ selectedTimesheet?.month }}/{{ selectedTimesheet?.year }})</p>
+            <p class="modal-subtitle">{{ selectedTimesheet?.employeeDisplayName }} (Month: {{ selectedTimesheet?.month }}/{{ selectedTimesheet?.year }})</p>
           </div>
           <button @click="closeDetailModal" class="close-modal-btn">✕</button>
         </div>
@@ -404,7 +404,7 @@ watch(
             <input 
               v-model="timesheetRejectionReasons[selectedTimesheet.id]" 
               type="text" 
-              placeholder="Grund für Ablehnung eingeben..." 
+              placeholder="Enter reason for rejection..." 
               class="reason-input-modal"
             />
             <button @click="handleRejectTimesheet(selectedTimesheet.id)" class="reject-btn">

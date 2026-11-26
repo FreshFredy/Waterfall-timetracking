@@ -71,7 +71,7 @@ const fetchVacationData = async () => {
         }
 
         if (!currentId || currentId === 'undefined') {
-            console.log("Warte auf gültige Mitarbeiter-ID / User-Daten...");
+            console.log("Waiting for valid Employee-ID / Eployee-Data...");
             return;
         }
 
@@ -94,7 +94,7 @@ const fetchVacationData = async () => {
         remainingVacationDays.value = calculatedRemaining;
 
     } catch (error) {
-        console.error("Fehler beim Laden der Urlaubsdaten:", error)
+        console.error("Error loading vacation data:", error)
         takenVacationDays.value = "–"
         plannedVacationDays.value = "–"
         availableVacationDays.value = "–"
@@ -132,26 +132,25 @@ const fetchVacationRequests = async () => {
                 : `${formatDate(req.startDate)} – ${formatDate(req.endDate)}`;
 
             let variant = 'warning';
-            let displayStatus = 'Ausstehend';
+            let displayStatus = 'Pending';
             
             const rawStatus = req.status ? req.status.toUpperCase() : 'PENDING';
-            if (rawStatus === 'APPROVED' || rawStatus === 'GENEHMIGT') {
+            if (rawStatus === 'APPROVED') {
                 variant = 'success';
-                displayStatus = 'Genehmigt';
-            } else if (rawStatus === 'REJECTED' || rawStatus === 'ABGELEHNT') {
+                displayStatus = 'Approved';
+            } else if (rawStatus === 'REJECTED') {
                 variant = 'danger';
-                displayStatus = 'Abgelehnt';
-            } else if (rawStatus === 'CANCELLED' || rawStatus === 'STORNIERT') {
+                displayStatus = 'Rejected';
+            } else if (rawStatus === 'CANCELLED') {
                 variant = 'neutral';
-                displayStatus = 'Storniert';
+                displayStatus = 'Cancled';
             }
 
             const daysCount = req.daysCount || calculateWorkDays(req.startDate, req.endDate);
 
             const isApproved = rawStatus === 'APPROVED' || rawStatus === 'GENEHMIGT';
             const hasStarted = isAlreadyStartedOrToday(req.startDate);
-            const isCancelledOrRejected = rawStatus === 'CANCELLED' || rawStatus === 'STORNIERT' || rawStatus === 'REJECTED' || rawStatus === 'ABGELEHNT';
-            
+            const isCancelledOrRejected = rawStatus === 'CANCELLED' || rawStatus === 'REJECTED';
             const canBeCancelled = !isCancelledOrRejected && !(isApproved && hasStarted);
 
             return {
@@ -166,7 +165,7 @@ const fetchVacationRequests = async () => {
         });
 
     } catch (error) {
-        console.error("Fehler beim Laden der Urlaubsanträge:", error);
+        console.error("Error loading vacation Application:", error);
     }
 };
 
@@ -188,7 +187,7 @@ const handleCancelRequest = async (requestId) => {
     await fetchVacationData();
     await fetchVacationRequests();
   } catch (error) {
-    console.error("Fehler beim Abbrechen des Urlaubsantrags:", error);
+    console.error("Error canceling vacation:", error);
     alert('error');
   }
 }
@@ -239,12 +238,12 @@ const handleAddVacation = async () => {
 
   // Prüfung: Startdatum muss strikt in der Zukunft liegen (weder Vergangenheit noch heute)
   if (startDateObj <= today) {
-    alert('Urlaub kann erst ab dem nächsten Tag beantragt werden (heute und vergangene Tage sind nicht erlaubt).');
+    alert('Vacation can only be requested starting tommorow.');
     return;
   }
 
   if (vacationStats.value.days <= 0) {
-    alert('Bitte ein gültiges Start- und Enddatum (mindestens 1 Arbeitstag) wählen.')
+    alert('Please select at least a range of 1 days.')
     return
   }
 
@@ -258,7 +257,7 @@ const handleAddVacation = async () => {
   }
 
   if (!currentId || currentId === 'undefined') {
-    console.log("Warte auf gültige Mitarbeiter-ID / User-Daten...");
+    console.log("Waiting for valid Employee ID / User-Data...");
     return;
   }
 
@@ -277,8 +276,8 @@ const handleAddVacation = async () => {
     await fetchVacationRequests();
 
   } catch (error) {
-    console.error("Fehler beim Erstellen des Urlaubsantrags:", error);
-    alert('Der Urlaubsantrag konnte nicht gespeichert werden.');
+    console.error("error creating vacation request:", error);
+    alert('Could not save vacation request.');
   }
 }
 
@@ -347,7 +346,7 @@ const yearshow = computed(() => {
                   v-if="entry.canBeCancelled"
                   @click="handleCancelRequest(entry.id)" 
                   class="cancel-btn"
-                  title="Antrag abbrechen"
+                  title="Cancel"
                 >
                   Abbrechen
                 </button>
