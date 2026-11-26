@@ -109,10 +109,10 @@ const icons = {
   flex: '\uf0ec',  // exchange
   sick: '\uf0f1',  // stethoscope
 }
-const workingTime = ref("Laden...")
-const flexBalance = ref("Laden...")
-const sickLeave = ref("Laden...")
-const availableVacationDays = ref("Laden...")
+const workingTime = ref("Loading...")
+const flexBalance = ref("Loading...")
+const sickLeave = ref("Loading...")
+const availableVacationDays = ref("Loading...")
 
 // Daten vom Backend abrufen
 const fetchDashboardData = async () => {
